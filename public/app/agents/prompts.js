@@ -28,6 +28,12 @@ Category mapping tips:
 
 When the topic clearly matches one or more categories, include categoryPrimary with ALL relevant categories (it's an array — use multiple). Only omit categoryPrimary for very broad or cross-cutting queries where filtering would miss results.`;
 
+export const POST_TYPE_GUIDANCE = `## Post Type Filtering
+The postType parameter filters by content type: "blog" (articles/insights) or "work" (client case studies).
+- Do NOT add postType unless the user specifically asks for case studies or client work.
+- For general queries about expertise, experience, technology, etc., omit postType to search across all content.
+- Only use postType: ["work"] when the user explicitly asks for case studies, client projects, or specific client work.`;
+
 export const AINE_GUIDANCE = `## Topic Guidance: AI-Native Engineering
 When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
 - Have a bias for posts from 2025-on.
@@ -49,6 +55,8 @@ You MUST respond with JSON containing an "action" field.
 ${BRAND_RULES}
 
 ${CATEGORY_GUIDANCE}
+
+${POST_TYPE_GUIDANCE}
 
 ${AINE_GUIDANCE}
 
