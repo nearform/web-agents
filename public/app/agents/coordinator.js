@@ -2,6 +2,8 @@ import { runResearcher } from "./researcher.js";
 import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
 import { createSession, promptSessionConstrained } from "./prompt-api.js";
+import { createEmitter } from "../util/activity.js";
+import { TRIAGE_SYSTEM_PROMPT } from "./prompts.js";
 
 const TRIAGE_SCHEMA = {
   type: "object",
@@ -12,21 +14,7 @@ const TRIAGE_SCHEMA = {
 };
 
 async function triageFollowUp(userMessage, existingNotepad) {
-  const session = await createSession(
-    `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
-
-Reply with JSON: {"needs_research": true} or {"needs_research": false}.
-
-needs_research = true when:
-- The user asks a factual question about a new topic not covered in the notepad
-- The user asks about a specific company, person, project, or technology not in the notepad
-- The user explicitly asks to search, find, or look up something
-
-needs_research = false when:
-- The user asks to rewrite, reformat, shorten, expand, or change tone of existing content
-- The user asks for a different output format (email, slides, bullets)
-- The question can be fully answered from the existing notepad content`,
-  );
+  const session = await createSession(TRIAGE_SYSTEM_PROMPT);
   try {
     const raw = await promptSessionConstrained(
       session,
@@ -57,16 +45,7 @@ export const runCoordinator = async ({
   onStreamChunk,
   onNotepadStreamChunk,
 }) => {
-  const emit = (type, detail) => {
-    if (onActivity) {
-      onActivity({
-        agent: "Coordinator",
-        type,
-        detail,
-        timestamp: Date.now(),
-      });
-    }
-  };
+  const emit = createEmitter("Coordinator", onActivity);
 
   emit("start", "Analyzing your request...");
 

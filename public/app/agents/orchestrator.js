@@ -2,9 +2,8 @@ import { createSession, promptSessionConstrained } from "./prompt-api.js";
 import { formatToolResult } from "./tool-call-parser.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
-
-const MAX_ITERATIONS = 3;
-const MAX_SEARCH_POSTS = 8;
+import { config } from "../config.js";
+import { createEmitter } from "../util/activity.js";
 
 /**
  * Slim down search results to reduce context size for the local model.
@@ -13,8 +12,8 @@ const MAX_SEARCH_POSTS = 8;
 const slimToolResult = (result) => {
   if (result && typeof result === "object" && Array.isArray(result.posts)) {
     return {
-      postCount: Math.min(result.posts.length, MAX_SEARCH_POSTS),
-      posts: result.posts.slice(0, MAX_SEARCH_POSTS).map((p) => ({
+      postCount: Math.min(result.posts.length, config.agents.maxSearchPosts),
+      posts: result.posts.slice(0, config.agents.maxSearchPosts).map((p) => ({
         title: p.title,
         href: p.href,
         date: p.date,
@@ -135,16 +134,7 @@ export const runAgentLoop = async ({
   onActivity,
   agentName,
 }) => {
-  const emit = (type, detail) => {
-    if (onActivity) {
-      onActivity({
-        agent: agentName,
-        type,
-        detail,
-        timestamp: Date.now(),
-      });
-    }
-  };
+  const emit = createEmitter(agentName, onActivity);
 
   emit("start", `${agentName} starting`);
   debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
@@ -159,7 +149,7 @@ export const runAgentLoop = async ({
   let currentMessage = userMessage;
   let lastResponse = "";
 
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
+  for (let i = 0; i < config.agents.maxIterations; i++) {
     emit("prompt", `Sending message (iteration ${i + 1})`);
     debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
 

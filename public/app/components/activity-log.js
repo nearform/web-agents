@@ -1,5 +1,6 @@
 import { html } from "../util/html.js";
 import React from "react";
+import { ActivityType } from "../util/activity.js";
 
 const AGENT_COLORS = {
   Coordinator: "agent-coordinator",
@@ -18,24 +19,24 @@ const formatTime = (ts) => {
 
 const getIcon = (type) => {
   switch (type) {
-    case "start":
+    case ActivityType.START:
       return "ph ph-play";
     case "thinking":
-    case "prompt":
+    case ActivityType.PROMPT:
       return "ph ph-brain";
-    case "delegate":
+    case ActivityType.DELEGATE:
       return "ph ph-arrow-right";
-    case "tool-call":
+    case ActivityType.TOOL_CALL:
       return "ph ph-wrench";
-    case "tool-result":
+    case ActivityType.TOOL_RESULT:
       return "ph ph-check-circle";
-    case "tool-error":
-    case "error":
+    case ActivityType.TOOL_ERROR:
+    case ActivityType.ERROR:
       return "ph ph-warning";
-    case "response":
-    case "received":
+    case ActivityType.RESPONSE:
+    case ActivityType.RECEIVED:
       return "ph ph-chat-circle";
-    case "done":
+    case ActivityType.DONE:
       return "ph ph-flag-checkered";
     default:
       return "ph ph-dot";

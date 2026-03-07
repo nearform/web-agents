@@ -1,5 +1,6 @@
 /* global LanguageModel:false, setTimeout:false */
 import { debug } from "../util/debug.js";
+import { config } from "../config.js";
 
 const PROMPT_OPTIONS = {
   expectedInputs: [{ type: "text", languages: ["en"] }],
@@ -74,7 +75,7 @@ export const promptSessionConstrained = async (
   debug("prompt-api", "Constrained prompt, message length:", message.length);
   const result = await withTimeout(
     session.prompt(message, { responseConstraint }),
-    120_000,
+    config.timeouts.promptMs,
   );
   debug("prompt-api", "Constrained response length:", result.length);
   return result;

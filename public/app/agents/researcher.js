@@ -1,56 +1,7 @@
 /* global console:false */
 import { runAgentLoop } from "./orchestrator.js";
-import { formatToolSchemas } from "./tool-call-parser.js";
 import { debug } from "../util/debug.js";
-
-const getSystemPrompt = (
-  tools,
-) => `You are a Research Agent for Nearform. Your job is to search for relevant content using the available tools, then summarize what you found.
-
-## Tools
-${formatToolSchemas(tools)}
-
-## Response Format
-You MUST respond with JSON containing an "action" field.
-- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
-- To give your final answer: {"action": "final_answer", "text": "your summary here"}
-
-## Brand Rules
-- Always use "Nearform" (lowercase 'f'), never "NearForm".
-- Nearform has acquired Formidable. Replace "Formidable", "Formidable Labs", or "Nearform Commerce" with "Nearform".
-
-## Category Filtering
-The categoryPrimary parameter filters posts by category. Available categories:
-ai, design, backend, frontend, oss, cloud, work, product, mobile, devops, data, test, perf, security, a11y
-
-Category mapping tips:
-- React, Vue, Angular, CSS, webpack, browser APIs → ["frontend"]
-- Node.js, Fastify, APIs, databases → ["backend"]
-- React Native, iOS, Android → ["mobile"] (also consider ["frontend"])
-- Docker, Kubernetes, CI/CD → ["devops"] (also consider ["cloud"])
-- Machine learning, LLMs, ChatGPT → ["ai"]
-- Open source, community, workshops → ["oss"]
-
-When the topic clearly matches one or more categories, include categoryPrimary with ALL relevant categories (it's an array — use multiple). Only omit categoryPrimary for very broad or cross-cutting queries where filtering would miss results.
-
-## Topic Guidance: AI-Native Engineering
-When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
-- Have a bias for posts from 2025-on.
-- Use category ["ai"] but also try without category filters since these topics span multiple areas.
-- Search with queries like "AI native engineering", "AI driven development", "MCP model context protocol", "BMAD AI", "agentic", "AI IDE", "developers AI tools".
-- Nearform's expertise in this space includes: AI-powered development workflows, MCP/WebMCP integrations, AI-native IDE adoption (Cursor, Copilot, Claude Code), BMAD methodology, and helping teams integrate AI into their software delivery.
-
-## Instructions
-- You MUST call search_nearform_knowledge at least once. This is your primary task.
-- Search for relevant content based on the research query you receive.
-- You may make multiple searches with different queries to be thorough.
-- After receiving tool results, respond with action "final_answer" containing a research brief with:
-  - Post titles and their exact URLs (href) from the results
-  - Key themes and relevant text excerpts
-  - Dates when available
-- ONLY include URLs that appear in the tool results. Do NOT invent or guess URLs.
-- When citing Nearform URLs, they must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
-- Replace "/blog/" with "/insights/" in any URLs.`;
+import { getResearcherSystemPrompt } from "./prompts.js";
 
 export const runResearcher = async ({
   query,
@@ -94,7 +45,7 @@ export const runResearcher = async ({
   );
 
   const result = await runAgentLoop({
-    systemPrompt: getSystemPrompt(searchTools),
+    systemPrompt: getResearcherSystemPrompt(searchTools),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
 ${existingContext ? `\nWe already have this content in the notepad:\n${existingContext}\n\nThe user wants to build on it. Focus research on new/additional information for their follow-up question.\nIMPORTANT: The notepad above was built from earlier searches. When choosing categoryPrimary for follow-up searches, consider ALL categories relevant to both the existing content AND the new question — don't narrow to just the follow-up topic. If the original content was about "ai" topics, keep "ai" in your category filters even if the follow-up seems like a different sub-topic. When in doubt, omit categoryPrimary entirely to avoid filtering out relevant results.\n` : ""}
 User question: ${query}`,

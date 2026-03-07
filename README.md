@@ -1,6 +1,6 @@
 # WebMCP Demo
 
-TODO: Description
+Three AI agents collaborate using cross-origin WebMCP tools.
 
 ## Development
 

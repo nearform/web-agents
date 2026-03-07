@@ -10,19 +10,3 @@ export const openTextInNewWindow = (text) => {
   win.document.close();
   win.document.querySelector("pre").innerText = text;
 };
-
-export const getElements = (event) => {
-  const propNames = Object.getOwnPropertyNames(
-    event.currentTarget.elements,
-  ).filter(([k]) => !/^[0-9]+$/.test(k.toString()));
-
-  return Object.fromEntries(
-    propNames.map((k) => {
-      const v = event.currentTarget.elements[k];
-      if (v.type === "number") {
-        return [k, v.valueAsNumber];
-      }
-      return [k, v.value.trim()];
-    }),
-  );
-};

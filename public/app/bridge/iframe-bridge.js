@@ -1,8 +1,8 @@
 /* global window:false, document:false, console:false, setTimeout:false, clearTimeout:false */
 import { debug } from "../util/debug.js";
+import { config } from "../config.js";
 
-const VECTOR_SEARCH_ORIGIN = "http://localhost:4600";
-const IFRAME_SRC = `${VECTOR_SEARCH_ORIGIN}/public/`;
+const IFRAME_SRC = `${config.vectorSearchOrigin}/public/`;
 
 let iframe = null;
 let messageId = 0;
@@ -10,7 +10,7 @@ const pending = new Map();
 let readyResolve = null;
 
 const onMessage = (event) => {
-  if (event.origin !== VECTOR_SEARCH_ORIGIN) return;
+  if (event.origin !== config.vectorSearchOrigin) return;
   const { type, id } = event.data || {};
 
   // iframe-server signals it's ready
@@ -42,13 +42,16 @@ const sendMessage = (message) => {
     }
     const id = ++messageId;
     pending.set(id, { resolve, reject });
-    iframe.contentWindow.postMessage({ ...message, id }, VECTOR_SEARCH_ORIGIN);
+    iframe.contentWindow.postMessage(
+      { ...message, id },
+      config.vectorSearchOrigin,
+    );
     setTimeout(() => {
       if (pending.has(id)) {
         pending.delete(id);
         reject(new Error("Iframe request timed out"));
       }
-    }, 30000);
+    }, config.timeouts.bridgeRequestMs);
   });
 };
 
@@ -78,7 +81,7 @@ export const initBridge = () => {
       console.warn("[iframe-bridge] Timed out waiting for mcp:ready");
       readyResolve = null;
       resolve();
-    }, 15000);
+    }, config.timeouts.bridgeReadyMs);
 
     readyPromise.then(() => {
       clearTimeout(timeout);

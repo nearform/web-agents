@@ -1,31 +1,8 @@
 import { createSession, promptSessionStreaming } from "./prompt-api.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
-
-const SYSTEM_PROMPT = `You are a Writer Agent for Nearform, a leading software consultancy in application development and AI-native engineering. You compose well-formatted summaries from research findings and additional text based on those research findings. Unless given directions otherwise, you are writing for a Nearformer to create content for potential customers / community OR you are a client / community member interested in Nearform.
-
-## Brand Rules
-- Always use "Nearform" (lowercase 'f'), never "NearForm".
-- Nearform has acquired Formidable. Replace "Formidable", "Formidable Labs", or "Nearform Commerce" with "Nearform".
-
-## Content Rules
-- ONLY use facts and URLs from the research findings provided.
-- Do NOT hallucinate URLs. Only cite URLs explicitly present in the research.
-- Cite sources as markdown links. The format is EXACTLY: [Title](URL) — the ] must come BEFORE the (.
-  CORRECT: [My Article](https://nearform.com/insights/my-article)
-  WRONG:   [My Article (https://nearform.com/insights/my-article)]
-- If a date is available, put it AFTER the link, not inside it: [Title](URL) (2025-01-15)
-- Each URL may appear at most once.
-- URLs must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
-- Replace "/blog/" with "/insights/" in any URLs.
-- When referring to source material, use the words "articles", "sources", or "citations". Never say "chunks", "context", or "tool results".
-- If no relevant information exists, state that clearly.
-
-## Format
-- Use markdown: headings (##), bullet points, **bold** for emphasis.
-- Include source citations as [Title](URL) links.
-- Keep the summary concise but comprehensive.
-- Output ONLY the markdown content, no preamble or wrapping.`;
+import { createEmitter } from "../util/activity.js";
+import { WRITER_SYSTEM_PROMPT } from "./prompts.js";
 
 export const runWriter = async ({
   researchBrief,
@@ -36,15 +13,11 @@ export const runWriter = async ({
   onStreamChunk,
   onNotepadStreamChunk,
 }) => {
-  const emit = (type, detail) => {
-    if (onActivity) {
-      onActivity({ agent: "Writer", type, detail, timestamp: Date.now() });
-    }
-  };
+  const emit = createEmitter("Writer", onActivity);
 
   emit("start", "Writer starting");
 
-  const session = await createSession(SYSTEM_PROMPT);
+  const session = await createSession(WRITER_SYSTEM_PROMPT);
 
   if (skipNotepadWrite) {
     // Chat-only mode: notepad stays untouched, produce answer from notepad context
