@@ -2,71 +2,84 @@
 import { debug } from "../util/debug.js";
 
 /**
- * Try to fix common JSON issues from small models:
+ * Try to parse JSON, handling common small-model issues:
  * - Unescaped newlines inside string values
  * - Trailing commas
+ * - Multiline content strings
  */
 const tryParseJson = (raw) => {
+  // Attempt 1: raw parse
   try {
     return JSON.parse(raw);
   } catch {
     // noop
   }
 
-  // Fix unescaped newlines outside of quoted strings
-  let fixed = raw.replace(
-    /("(?:[^"\\]|\\.)*")|(\n)/g,
-    (match, quoted, newline) => {
-      if (quoted) return quoted;
-      if (newline) return " ";
-      return match;
-    },
-  );
-  // Remove trailing commas before } or ]
-  fixed = fixed.replace(/,\s*([}\]])/g, "$1");
+  // Attempt 2: escape literal newlines/tabs inside the string
+  const escaped = raw
+    .replace(/\r\n/g, "\\n")
+    .replace(/\n/g, "\\n")
+    .replace(/\t/g, "\\t");
+  // Also remove trailing commas
+  const cleaned = escaped.replace(/,\s*([}\]])/g, "$1");
 
   try {
-    return JSON.parse(fixed);
+    return JSON.parse(cleaned);
   } catch {
     // noop
   }
 
-  // Last resort: extract name and args separately via regex
+  // Attempt 3: extract name and args via regex
   const nameMatch = raw.match(/"name"\s*:\s*"([^"]+)"/);
-  const argsMatch = raw.match(/"args"\s*:\s*(\{[\s\S]*\})\s*$/);
-  if (nameMatch) {
-    const result = { name: nameMatch[1], args: {} };
-    if (argsMatch) {
+  if (!nameMatch) return null;
+
+  const result = { name: nameMatch[1], args: {} };
+
+  // Try to find args object — use everything after "args": { until the last }
+  const argsStart = raw.indexOf('"args"');
+  if (argsStart !== -1) {
+    const braceStart = raw.indexOf("{", argsStart + 6);
+    if (braceStart !== -1) {
+      // Take from the { to the end, trim trailing } from the outer object
+      let argsRaw = raw.slice(braceStart);
+      // Remove trailing outer brace if present
+      argsRaw = argsRaw.replace(/\}\s*\}\s*$/, "}");
+
       try {
-        result.args = JSON.parse(argsMatch[1]);
+        result.args = JSON.parse(argsRaw);
       } catch {
-        const contentMatch = argsMatch[1].match(
-          /"content"\s*:\s*"([\s\S]*)"\s*\}?$/,
-        );
-        if (contentMatch) {
-          result.args = { content: contentMatch[1].replace(/\\n/g, "\n") };
+        // For take_notes: extract content as everything between first ":" and last "}"
+        const contentStart = argsRaw.indexOf('"content"');
+        if (contentStart !== -1) {
+          const colonPos = argsRaw.indexOf(":", contentStart);
+          if (colonPos !== -1) {
+            let val = argsRaw.slice(colonPos + 1).trim();
+            // Strip surrounding quotes and trailing }
+            val = val.replace(/^\s*"/, "").replace(/"\s*\}?\s*$/, "");
+            // Unescape
+            val = val.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+            if (val) {
+              result.args = { content: val };
+            }
+          }
         }
       }
     }
-    return result;
   }
 
-  return null;
+  debug("tool-parser", "Regex-extracted tool call:", result.name, result.args);
+  return result;
 };
 
 /**
  * Normalize model output to handle common small-model quirks:
- * - Backtick wrapping: ```tool_call>...``` or `<tool_call>...`
- * - Missing opening <: tool_call>...</tool_call>
- * - Extra whitespace
+ * - Backtick wrapping
+ * - Missing opening <
  */
 const normalizeText = (text) => {
   let t = text;
-  // Strip backticks wrapping tool_call blocks
   t = t.replace(/`+/g, "");
-  // Fix missing opening < on tool_call tags
   t = t.replace(/(?<![<])tool_call>/g, "<tool_call>");
-  // Fix missing opening < on /tool_call closing tags
   t = t.replace(/(?<![<])\/tool_call>/g, "</tool_call>");
   return t;
 };
@@ -97,13 +110,25 @@ export const parseToolCalls = (text) => {
     }
   }
 
-  // Fallback: look for JSON objects with a "name" field matching known tools
+  // Fallback: look for JSON with known tool names outside of tags
   if (calls.length === 0) {
-    const jsonPattern =
-      /\{\s*"name"\s*:\s*"(take_notes|clear_notes|search_nearform_knowledge)"\s*,\s*"args"\s*:\s*\{[^}]*\}\s*\}/g;
-    let jsonMatch;
-    while ((jsonMatch = jsonPattern.exec(normalized)) !== null) {
-      const parsed = tryParseJson(jsonMatch[0]);
+    const namePattern =
+      /"name"\s*:\s*"(take_notes|clear_notes|search_nearform_knowledge)"/g;
+    let nameMatch;
+    while ((nameMatch = namePattern.exec(normalized)) !== null) {
+      // Find the enclosing { ... } around this match
+      let start = nameMatch.index;
+      while (start > 0 && normalized[start] !== "{") start--;
+      // Find matching closing brace (handle nesting)
+      let depth = 0;
+      let end = start;
+      for (; end < normalized.length; end++) {
+        if (normalized[end] === "{") depth++;
+        if (normalized[end] === "}") depth--;
+        if (depth === 0) break;
+      }
+      const jsonStr = normalized.slice(start, end + 1);
+      const parsed = tryParseJson(jsonStr);
       if (parsed?.name) {
         debug("tool-parser", "Fallback parsed tool call:", parsed.name);
         calls.push({ name: parsed.name, args: parsed.args || {} });
@@ -124,7 +149,12 @@ export const parseToolCalls = (text) => {
 
 export const hasToolCalls = (text) => {
   const normalized = normalizeText(text);
-  return /<tool_call>/.test(normalized);
+  return (
+    /<tool_call>/.test(normalized) ||
+    /"name"\s*:\s*"(take_notes|clear_notes|search_nearform_knowledge)"/.test(
+      normalized,
+    )
+  );
 };
 
 export const formatToolSchemas = (tools) => {

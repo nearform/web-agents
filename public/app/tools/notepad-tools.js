@@ -16,23 +16,23 @@ export const notepadTools = [
   {
     name: "take_notes",
     description:
-      "Append notes to the shared notepad. Use this to write summaries, key findings, or formatted content. Content is appended to existing notes.",
+      "Write content to the shared notepad. Replaces any existing notepad content.",
     inputSchema: {
       type: "object",
       properties: {
         content: {
           type: "string",
-          description: "The text content to append to the notepad",
+          description: "The text content to write to the notepad",
         },
       },
       required: ["content"],
     },
-    execute: async ({ content }) => {
-      const updated = notepadContent
-        ? notepadContent + "\n\n" + content
-        : content;
-      updateNotepad(updated);
-      return { success: true, notepadLength: updated.length };
+    execute: async ({ content } = {}) => {
+      if (!content) {
+        return { success: false, error: "content is required" };
+      }
+      updateNotepad(content);
+      return { success: true, notepadLength: content.length };
     },
   },
   {
