@@ -41,28 +41,27 @@ export const ChatPanel = ({
             <div key=${i} className="chat-bubble chat-bubble--${msg.role}">
               ${msg.role === "assistant" &&
               html`<span className="chat-agent-label">Coordinator</span>`}
-              ${msg.type === "choice"
-                ? html`
-                    <div className="chat-bubble-text">${msg.text}</div>
-                    <div className="chat-choice-buttons">
-                      <button
-                        className="chat-choice-btn chat-choice-btn--fresh"
-                        onClick=${() => onChoice("fresh")}
-                        disabled=${!pendingChoice}
-                      >
-                        <i className="ph ph-arrow-counter-clockwise"></i> Start
-                        Fresh
-                      </button>
-                      <button
-                        className="chat-choice-btn chat-choice-btn--build"
-                        onClick=${() => onChoice("build")}
-                        disabled=${!pendingChoice}
-                      >
-                        <i className="ph ph-plus-circle"></i> Build On Existing
-                      </button>
-                    </div>
-                  `
-                : html`<div className="chat-bubble-text">${msg.text}</div>`}
+              <div className="chat-bubble-text">${msg.text}</div>
+              ${msg.type === "choice" &&
+              html`
+                <div className="chat-choice-buttons">
+                  <button
+                    className="chat-choice-btn chat-choice-btn--fresh"
+                    onClick=${() => onChoice("fresh")}
+                    disabled=${!pendingChoice}
+                  >
+                    <i className="ph ph-arrow-counter-clockwise"></i> Start
+                    Fresh
+                  </button>
+                  <button
+                    className="chat-choice-btn chat-choice-btn--build"
+                    onClick=${() => onChoice("build")}
+                    disabled=${!pendingChoice}
+                  >
+                    <i className="ph ph-plus-circle"></i> Build On Existing
+                  </button>
+                </div>
+              `}
             </div>
           `,
         )}
