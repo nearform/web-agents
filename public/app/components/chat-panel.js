@@ -1,6 +1,14 @@
 import { html } from "../util/html.js";
 
-export const ChatPanel = ({ messages, onSend, onChoice, isProcessing, pendingChoice }) => {
+export const ChatPanel = ({
+  messages,
+  onSend,
+  onChoice,
+  onStartFresh,
+  isProcessing,
+  pendingChoice,
+  hasNotepad,
+}) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const input = e.currentTarget.elements.message;
@@ -11,6 +19,8 @@ export const ChatPanel = ({ messages, onSend, onChoice, isProcessing, pendingCho
   };
 
   const inputDisabled = isProcessing || pendingChoice;
+  const hasMessages = messages.length > 0;
+  const showStartFresh = hasNotepad && !isProcessing && !pendingChoice;
 
   return html`
     <div className="chat-panel">
@@ -19,7 +29,7 @@ export const ChatPanel = ({ messages, onSend, onChoice, isProcessing, pendingCho
         <h2>Chat</h2>
       </div>
       <div className="chat-messages">
-        ${messages.length === 0 &&
+        ${!hasMessages &&
         html`
           <div className="chat-empty">
             Ask a question about Nearform's content to see the agents
@@ -40,7 +50,8 @@ export const ChatPanel = ({ messages, onSend, onChoice, isProcessing, pendingCho
                         onClick=${() => onChoice("fresh")}
                         disabled=${!pendingChoice}
                       >
-                        <i className="ph ph-arrow-counter-clockwise"></i> Start Fresh
+                        <i className="ph ph-arrow-counter-clockwise"></i> Start
+                        Fresh
                       </button>
                       <button
                         className="chat-choice-btn chat-choice-btn--build"
@@ -63,12 +74,23 @@ export const ChatPanel = ({ messages, onSend, onChoice, isProcessing, pendingCho
             </div>
           </div>
         `}
+        ${showStartFresh &&
+        html`
+          <div className="chat-start-fresh">
+            <button className="chat-start-fresh-btn" onClick=${onStartFresh}>
+              <i className="ph ph-arrow-counter-clockwise"></i> Clear notepad &
+              start over
+            </button>
+          </div>
+        `}
       </div>
       <form className="chat-input-form" onSubmit=${handleSubmit}>
         <textarea
           name="message"
           className="chat-input"
-          placeholder="Ask about Nearform's AI articles, services..."
+          placeholder=${hasNotepad
+            ? "Ask a follow-up question to build on the notepad, or start fresh..."
+            : "Ask about Nearform's AI articles, services..."}
           rows="2"
           disabled=${inputDisabled}
           onKeyDown=${(e) => {

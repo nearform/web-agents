@@ -117,6 +117,13 @@ export const App = () => {
     [pendingQuery, notepadContent, executeCoordinator],
   );
 
+  const handleStartFresh = React.useCallback(() => {
+    setMessages([]);
+    setActivities([]);
+    setNotepadContent("");
+    updateNotepad("");
+  }, []);
+
   const handleUpdateNotepad = React.useCallback((content) => {
     setNotepadContent(content);
     updateNotepad(content);
@@ -153,8 +160,10 @@ export const App = () => {
           messages=${messages}
           onSend=${handleSend}
           onChoice=${handleChoice}
+          onStartFresh=${handleStartFresh}
           isProcessing=${isProcessing}
           pendingChoice=${!!pendingQuery}
+          hasNotepad=${!!notepadContent}
         />
         <${ActivityLog} activities=${activities} />
         <${NotepadPanel}

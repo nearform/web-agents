@@ -31,7 +31,12 @@ You MUST respond with JSON containing an "action" field.
 - When citing Nearform URLs, they must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
 - Replace "/blog/" with "/insights/" in any URLs.`;
 
-export const runResearcher = async ({ query, tools, onActivity, existingContext }) => {
+export const runResearcher = async ({
+  query,
+  tools,
+  onActivity,
+  existingContext,
+}) => {
   const searchTools = tools.filter(
     (t) => t.name === "search_nearform_knowledge",
   );

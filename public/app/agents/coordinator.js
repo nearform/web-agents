@@ -5,7 +5,12 @@ import { runWriter } from "./writer.js";
  * Coordinator agent: decomposes user request, delegates to
  * Researcher and Writer agents, and synthesizes a final answer.
  */
-export const runCoordinator = async ({ userMessage, tools, onActivity, existingNotepad }) => {
+export const runCoordinator = async ({
+  userMessage,
+  tools,
+  onActivity,
+  existingNotepad,
+}) => {
   const emit = (type, detail) => {
     if (onActivity) {
       onActivity({

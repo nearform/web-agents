@@ -4,6 +4,25 @@ import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 
 const MAX_ITERATIONS = 3;
+const MAX_SEARCH_POSTS = 8;
+
+/**
+ * Slim down search results to reduce context size for the local model.
+ * Keeps only the fields the agents need (title, href, date) and caps post count.
+ */
+const slimToolResult = (result) => {
+  if (result && typeof result === "object" && Array.isArray(result.posts)) {
+    return {
+      postCount: Math.min(result.posts.length, MAX_SEARCH_POSTS),
+      posts: result.posts.slice(0, MAX_SEARCH_POSTS).map((p) => ({
+        title: p.title,
+        href: p.href,
+        date: p.date,
+      })),
+    };
+  }
+  return result;
+};
 
 /**
  * Attempt to repair JSON truncated by output token limits.
@@ -67,11 +86,17 @@ const repairTruncatedJson = (raw) => {
 const mergeToolArgsSchema = (tools) => {
   // Combine all tool input schema properties so constrained decoding
   // knows which fields are valid inside tool_args.
+  // Strip non-structural fields (description, etc.) that Chrome's
+  // constrained decoding may not support.
   const properties = {};
   for (const t of tools) {
     const schema = t.inputSchema;
     if (schema && schema.properties) {
-      Object.assign(properties, schema.properties);
+      for (const [key, value] of Object.entries(schema.properties)) {
+        const clean = { type: value.type };
+        if (value.enum) clean.enum = value.enum;
+        properties[key] = clean;
+      }
     }
   }
   if (Object.keys(properties).length === 0) {
@@ -125,6 +150,11 @@ export const runAgentLoop = async ({
 
   const session = await createSession(systemPrompt);
   const responseConstraint = buildResponseSchema(tools);
+  debug(
+    agentName,
+    "=== RESPONSE CONSTRAINT ===\n" +
+      JSON.stringify(responseConstraint, null, 2),
+  );
   let currentMessage = userMessage;
   let lastResponse = "";
 
@@ -151,7 +181,11 @@ export const runAgentLoop = async ({
     try {
       response = JSON.parse(raw);
     } catch (err) {
-      debug(agentName, "JSON.parse failed, attempting truncation repair:", err.message);
+      debug(
+        agentName,
+        "JSON.parse failed, attempting truncation repair:",
+        err.message,
+      );
       try {
         response = repairTruncatedJson(raw);
         debug(agentName, "Truncation repair succeeded");
@@ -188,12 +222,13 @@ export const runAgentLoop = async ({
 
       let resultMessage;
       try {
-        const result = await callTool(tc.name, tc.args);
+        const rawResult = await callTool(tc.name, tc.args);
+        const result = slimToolResult(rawResult);
         const resultStr =
           typeof result === "string" ? result : JSON.stringify(result);
         const truncated =
-          resultStr.length > 2000
-            ? resultStr.slice(0, 2000) + "...[truncated]"
+          resultStr.length > 1200
+            ? resultStr.slice(0, 1200) + "...[truncated]"
             : resultStr;
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + truncated);
         emit("tool-result", {

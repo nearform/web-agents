@@ -50,25 +50,44 @@ export const NotepadPanel = ({ content, onUpdateContent }) => {
           <i className="ph ph-notepad"></i>
           <h2>Notepad</h2>
         </div>
-        ${content && !editing && html`
-          <button className="notepad-edit-btn" onClick=${handleStartEdit} title="Edit notepad">
+        ${content &&
+        !editing &&
+        html`
+          <button
+            className="notepad-edit-btn"
+            onClick=${handleStartEdit}
+            title="Edit notepad"
+          >
             <i className="ph ph-pencil-simple"></i>
           </button>
         `}
-        ${editing && html`
+        ${editing &&
+        html`
           <div className="notepad-edit-actions">
-            <button className="notepad-edit-btn notepad-save-btn" onClick=${handleSave} title="Save">
+            <button
+              className="notepad-edit-btn notepad-save-btn"
+              onClick=${handleSave}
+              title="Save"
+            >
               <i className="ph ph-check"></i>
             </button>
-            <button className="notepad-edit-btn notepad-cancel-btn" onClick=${handleCancel} title="Cancel">
+            <button
+              className="notepad-edit-btn notepad-cancel-btn"
+              onClick=${handleCancel}
+              title="Cancel"
+            >
               <i className="ph ph-x"></i>
             </button>
           </div>
         `}
       </div>
-      <div className="notepad-description">
-        Your working document. Agents write here, and you can edit it too. Content is used as context for follow-up queries.
-      </div>
+      ${!content &&
+      html`
+        <div className="notepad-description">
+          Your working document. Agents write here, and you can edit it too.
+          Content is used as context for follow-up queries.
+        </div>
+      `}
       <div className="notepad-content">
         ${editing
           ? html`<textarea

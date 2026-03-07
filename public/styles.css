@@ -539,6 +539,33 @@ body {
   color: var(--color-accent);
 }
 
+/* Start Fresh inline button */
+.chat-start-fresh {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.chat-start-fresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chat-start-fresh-btn:hover {
+  border-color: #e55;
+  color: #e55;
+  background: #fff3f3;
+}
+
 /* Tool Status Bar */
 .tool-status-bar {
   display: flex;
