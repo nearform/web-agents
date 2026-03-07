@@ -437,6 +437,108 @@ body {
   font-weight: 600;
 }
 
+/* Notepad Header Layout */
+.notepad-header {
+  justify-content: space-between;
+}
+
+.notepad-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notepad-edit-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+
+.notepad-edit-btn:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.notepad-save-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.notepad-cancel-btn:hover {
+  color: #e55;
+  border-color: #e55;
+}
+
+.notepad-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.notepad-description {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-style: italic;
+}
+
+.notepad-editor {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+/* Chat Choice Buttons */
+.chat-choice-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chat-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.chat-choice-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chat-choice-btn--fresh:not(:disabled):hover {
+  background: #fff3f3;
+  border-color: #e55;
+  color: #e55;
+}
+
+.chat-choice-btn--build:not(:disabled):hover {
+  background: #f0f9ff;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 /* Tool Status Bar */
 .tool-status-bar {
   display: flex;

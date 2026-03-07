@@ -43,13 +43,24 @@ export const promptSession = async (session, message) => {
   return result;
 };
 
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Prompt timed out after ${ms / 1000}s`)), ms),
+    ),
+  ]);
+
 export const promptSessionConstrained = async (
   session,
   message,
   responseConstraint,
 ) => {
   debug("prompt-api", "Constrained prompt, message length:", message.length);
-  const result = await session.prompt(message, { responseConstraint });
+  const result = await withTimeout(
+    session.prompt(message, { responseConstraint }),
+    60_000,
+  );
   debug("prompt-api", "Constrained response length:", result.length);
   return result;
 };

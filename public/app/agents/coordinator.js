@@ -5,7 +5,7 @@ import { runWriter } from "./writer.js";
  * Coordinator agent: decomposes user request, delegates to
  * Researcher and Writer agents, and synthesizes a final answer.
  */
-export const runCoordinator = async ({ userMessage, tools, onActivity }) => {
+export const runCoordinator = async ({ userMessage, tools, onActivity, existingNotepad }) => {
   const emit = (type, detail) => {
     if (onActivity) {
       onActivity({
@@ -30,6 +30,7 @@ export const runCoordinator = async ({ userMessage, tools, onActivity }) => {
       query: userMessage,
       tools,
       onActivity,
+      existingContext: existingNotepad,
     });
   } catch (err) {
     emit("error", `Research failed: ${err.message}`);
@@ -46,6 +47,7 @@ export const runCoordinator = async ({ userMessage, tools, onActivity }) => {
       originalQuery: userMessage,
       tools,
       onActivity,
+      existingNotepad,
     });
   } catch (err) {
     emit("error", `Writing failed: ${err.message}`);
@@ -57,5 +59,5 @@ export const runCoordinator = async ({ userMessage, tools, onActivity }) => {
   // Step 4: Synthesize final answer
   emit("done", "All agents finished");
 
-  return `I've researched your question and compiled a summary in the notepad. Here's a quick overview:\n\n${researchBrief.slice(0, 500)}${researchBrief.length > 500 ? "..." : ""}\n\nCheck the notepad panel for the full formatted summary.`;
+  return `I've researched your question and ${existingNotepad ? "updated" : "compiled"} the notepad. Here's a quick overview:\n\n${researchBrief.slice(0, 500)}${researchBrief.length > 500 ? "..." : ""}\n\nCheck the notepad panel for the full formatted result.`;
 };

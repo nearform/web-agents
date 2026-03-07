@@ -5,6 +5,81 @@ import { debug } from "../util/debug.js";
 
 const MAX_ITERATIONS = 3;
 
+/**
+ * Attempt to repair JSON truncated by output token limits.
+ * Closes unterminated strings, then adds missing brackets/braces.
+ */
+const repairTruncatedJson = (raw) => {
+  let s = raw;
+
+  // If we're inside an unterminated string, close it
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') inString = !inString;
+  }
+  if (inString) s += '"';
+
+  // Close any open brackets/braces
+  const stack = [];
+  inString = false;
+  escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{" || ch === "[") stack.push(ch);
+    if (ch === "}") stack.pop();
+    if (ch === "]") stack.pop();
+  }
+
+  // Remove trailing comma before we close
+  s = s.replace(/,\s*$/, "");
+
+  while (stack.length > 0) {
+    const open = stack.pop();
+    s += open === "{" ? "}" : "]";
+  }
+
+  return JSON.parse(s);
+};
+
+const mergeToolArgsSchema = (tools) => {
+  // Combine all tool input schema properties so constrained decoding
+  // knows which fields are valid inside tool_args.
+  const properties = {};
+  for (const t of tools) {
+    const schema = t.inputSchema;
+    if (schema && schema.properties) {
+      Object.assign(properties, schema.properties);
+    }
+  }
+  if (Object.keys(properties).length === 0) {
+    return { type: "object" };
+  }
+  return { type: "object", properties };
+};
+
 const buildResponseSchema = (tools) => ({
   type: "object",
   properties: {
@@ -16,7 +91,7 @@ const buildResponseSchema = (tools) => ({
       type: "string",
       enum: tools.map((t) => t.name),
     },
-    tool_args: { type: "object" },
+    tool_args: mergeToolArgsSchema(tools),
     text: { type: "string" },
   },
   required: ["action"],
@@ -76,10 +151,16 @@ export const runAgentLoop = async ({
     try {
       response = JSON.parse(raw);
     } catch (err) {
-      debug(agentName, "JSON.parse failed on constrained output:", err.message);
-      emit("error", `Invalid JSON from constrained decoding: ${err.message}`);
-      lastResponse = raw;
-      break;
+      debug(agentName, "JSON.parse failed, attempting truncation repair:", err.message);
+      try {
+        response = repairTruncatedJson(raw);
+        debug(agentName, "Truncation repair succeeded");
+      } catch (repairErr) {
+        debug(agentName, "Repair also failed:", repairErr.message);
+        emit("error", `Invalid JSON from constrained decoding: ${err.message}`);
+        lastResponse = raw;
+        break;
+      }
     }
 
     debug(

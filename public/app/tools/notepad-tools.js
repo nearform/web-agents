@@ -7,7 +7,7 @@ export const setNotepadCallback = (cb) => {
 
 export const getNotepadContent = () => notepadContent;
 
-const updateNotepad = (content) => {
+export const updateNotepad = (content) => {
   notepadContent = content;
   if (notepadCallback) notepadCallback(content);
 };

@@ -39,6 +39,7 @@ export const runWriter = async ({
   originalQuery,
   tools,
   onActivity,
+  existingNotepad,
 }) => {
   const noteTools = tools.filter((t) => t.name === "take_notes");
 
@@ -47,7 +48,7 @@ export const runWriter = async ({
     userMessage: `Based on the following research, compose a well-formatted summary and write it to the notepad.
 
 Original question: ${originalQuery}
-
+${existingNotepad ? `\nExisting notepad content to build upon:\n${existingNotepad}\n\nExtend and integrate new findings into the existing content rather than replacing it.\n` : ""}
 Research findings:
 ${researchBrief}`,
     tools: noteTools,

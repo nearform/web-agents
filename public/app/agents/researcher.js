@@ -31,7 +31,7 @@ You MUST respond with JSON containing an "action" field.
 - When citing Nearform URLs, they must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
 - Replace "/blog/" with "/insights/" in any URLs.`;
 
-export const runResearcher = async ({ query, tools, onActivity }) => {
+export const runResearcher = async ({ query, tools, onActivity, existingContext }) => {
   const searchTools = tools.filter(
     (t) => t.name === "search_nearform_knowledge",
   );
@@ -70,7 +70,7 @@ export const runResearcher = async ({ query, tools, onActivity }) => {
   const result = await runAgentLoop({
     systemPrompt: getSystemPrompt(searchTools),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
-
+${existingContext ? `\nWe already have this content in the notepad:\n${existingContext}\n\nThe user wants to build on it. Focus research on new/additional information for their follow-up question.\n` : ""}
 User question: ${query}`,
     tools: searchTools,
     onActivity,
