@@ -74,6 +74,24 @@ export const runCoordinator = async ({
       emit("error", `Research failed: ${err.message}`);
       return `I wasn't able to complete the research. Error: ${err.message}`;
     }
+    // Retry without filters if research came back empty
+    if (
+      researchBrief &&
+      !researchBrief.includes("http") &&
+      researchBrief.length < 150
+    ) {
+      emit("retry", "Research returned no results — retrying without filters");
+      try {
+        researchBrief = await runResearcher({
+          query: `IMPORTANT: Your previous search returned no results. This time, do NOT use any categoryPrimary or postType filters. Search with a broad query only.\n\nUser question: ${userMessage}`,
+          tools,
+          onActivity,
+          existingContext: existingNotepad,
+        });
+      } catch (err) {
+        emit("error", `Retry research failed: ${err.message}`);
+      }
+    }
     emit("received", `Research complete (${researchBrief.length} chars)`);
   } else {
     debug("Coordinator", "Existing notepad present — skipping research");

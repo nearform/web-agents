@@ -32,6 +32,7 @@ User's request: ${originalQuery}
 Research notepad:
 ${existingNotepad}
 
+Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above.`;
 
     debug("Writer", "=== CHAT-ONLY PROMPT ===\n" + chatPrompt);
@@ -95,7 +96,7 @@ User request: ${originalQuery}`;
   emit("prompt", "Composing chat reply");
   const chatReply = await promptSessionStreaming(
     session,
-    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above.`,
+    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`,
     onStreamChunk,
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);

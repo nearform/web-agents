@@ -28,11 +28,12 @@ Category mapping tips:
 
 When the topic clearly matches one or more categories, include categoryPrimary with ALL relevant categories (it's an array — use multiple). Only omit categoryPrimary for very broad or cross-cutting queries where filtering would miss results.`;
 
-export const POST_TYPE_GUIDANCE = `## Post Type Filtering
+export const POST_TYPE_GUIDANCE = `## Post Type Filtering — CRITICAL
 The postType parameter filters by content type: "blog" (articles/insights) or "work" (client case studies).
-- Do NOT add postType unless the user specifically asks for case studies or client work.
-- For general queries about expertise, experience, technology, etc., omit postType to search across all content.
-- Only use postType: ["work"] when the user explicitly asks for case studies, client projects, or specific client work.`;
+- DEFAULT: Omit postType entirely. Almost all queries should NOT have a postType filter.
+- The ONLY time to use postType: ["work"] is when the user literally says "case studies" or "client projects".
+- Queries about expertise, experience, capabilities, technology, services, etc. must NEVER use postType. These are answered by blog posts AND case studies together.
+- When in doubt, OMIT postType. Filtering incorrectly will return zero results.`;
 
 export const AINE_GUIDANCE = `## Topic Guidance: AI-Native Engineering
 When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
@@ -85,7 +86,7 @@ ${URL_RULES}
 - Use markdown: headings (##), bullet points, **bold** for emphasis.
 - Include source citations as [Title](URL) links.
 - Keep the summary concise but comprehensive.
-- Output ONLY the markdown content, no preamble or wrapping.`;
+- Output ONLY the markdown content, no preamble or wrapping. Do NOT wrap output in markdown code fences (\`\`\`).`;
 
 export const TRIAGE_SYSTEM_PROMPT = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
 
