@@ -95,6 +95,7 @@ const mergeToolArgsSchema = (tools) => {
       for (const [key, value] of Object.entries(schema.properties)) {
         const clean = { type: value.type };
         if (value.enum) clean.enum = value.enum;
+        if (value.items) clean.items = { type: value.items.type };
         properties[key] = clean;
       }
     }

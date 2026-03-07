@@ -1,4 +1,32 @@
+import React from "react";
 import { html } from "../util/html.js";
+import { renderMarkdown } from "../util/markdown.js";
+
+const ChatBubbleText = ({ text, isAssistant }) => {
+  const [showRaw, setShowRaw] = React.useState(false);
+
+  if (!isAssistant) {
+    return html`<div className="chat-bubble-text">${text}</div>`;
+  }
+
+  return html`
+    <div className="chat-bubble-text">
+      ${showRaw
+        ? html`<pre className="chat-bubble-raw">${text}</pre>`
+        : html`<div
+            className="chat-bubble-rendered"
+            dangerouslySetInnerHTML=${{ __html: renderMarkdown(text) }}
+          />`}
+      <button
+        className="chat-toggle-md"
+        onClick=${() => setShowRaw((v) => !v)}
+        title=${showRaw ? "Show formatted" : "Show raw markdown"}
+      >
+        <i className="ph ph-${showRaw ? "text-aa" : "code"}"></i>
+      </button>
+    </div>
+  `;
+};
 
 export const ChatPanel = ({
   messages,
@@ -41,7 +69,10 @@ export const ChatPanel = ({
             <div key=${i} className="chat-bubble chat-bubble--${msg.role}">
               ${msg.role === "assistant" &&
               html`<span className="chat-agent-label">Coordinator</span>`}
-              <div className="chat-bubble-text">${msg.text}</div>
+              <${ChatBubbleText}
+                text=${msg.text}
+                isAssistant=${msg.role === "assistant"}
+              />
               ${msg.type === "choice" &&
               html`
                 <div className="chat-choice-buttons">

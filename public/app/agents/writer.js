@@ -41,12 +41,36 @@ export const runWriter = async ({
   emit("prompt", "Composing notepad content");
   const session = await createSession(SYSTEM_PROMPT);
 
-  const contentPrompt = `Write a well-formatted markdown summary for the notepad.
+  const hasResearch = researchBrief && researchBrief.trim().length > 0;
+  let contentPrompt;
+
+  if (hasResearch && existingNotepad) {
+    contentPrompt = `Update the existing notepad content based on new research findings.
 
 Original question: ${originalQuery}
-${existingNotepad ? `\nExisting notepad content to build upon:\n${existingNotepad}\n\nExtend and integrate new findings into the existing content rather than replacing it.\n` : ""}
+
+Existing notepad content to build upon:
+${existingNotepad}
+
+Extend and integrate new findings into the existing content rather than replacing it.
+
+New research findings:
+${researchBrief}`;
+  } else if (hasResearch) {
+    contentPrompt = `Write a well-formatted markdown summary for the notepad.
+
+Original question: ${originalQuery}
+
 Research findings:
 ${researchBrief}`;
+  } else {
+    contentPrompt = `Revise and improve the existing notepad content based on the user's follow-up request. No new research was needed — just rework the existing content.
+
+User request: ${originalQuery}
+
+Current notepad content:
+${existingNotepad}`;
+  }
 
   debug("Writer", "=== CONTENT PROMPT ===\n" + contentPrompt);
   const notepadContent = await promptSession(session, contentPrompt);
@@ -61,7 +85,7 @@ ${researchBrief}`;
   emit("prompt", "Composing chat reply");
   const chatReply = await promptSession(
     session,
-    "Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details.",
+    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 specific source citations as markdown links (e.g. [Title](https://nearform.com/insights/...)). Use only real URLs from the research.`,
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
 

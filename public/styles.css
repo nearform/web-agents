@@ -224,6 +224,62 @@ body {
 
 .chat-bubble-text {
   white-space: pre-wrap;
+  position: relative;
+}
+
+.chat-bubble-rendered {
+  white-space: normal;
+}
+
+.chat-bubble-rendered a {
+  color: var(--color-accent-dark);
+  text-decoration: none;
+}
+
+.chat-bubble-rendered a:hover {
+  text-decoration: underline;
+}
+
+.chat-bubble-rendered ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.chat-bubble-rendered li {
+  margin-bottom: 2px;
+}
+
+.chat-bubble-rendered strong {
+  font-weight: 600;
+}
+
+.chat-bubble-raw {
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 0.82rem;
+  margin: 0;
+  background: var(--color-bg);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.chat-toggle-md {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.chat-toggle-md:hover {
+  opacity: 1;
 }
 
 .chat-typing {
