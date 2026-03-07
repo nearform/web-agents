@@ -42,6 +42,13 @@ When asked about AI-native engineering ("AINE"), AI-driven development, or relat
 - Search with queries like "AI native engineering", "AI driven development", "MCP model context protocol", "BMAD AI", "agentic", "AI IDE", "developers AI tools".
 - Nearform's expertise in this space includes: AI-powered development workflows, MCP/WebMCP integrations, AI-native IDE adoption (Cursor, Copilot, Claude Code), BMAD methodology, and helping teams integrate AI into their software delivery.`;
 
+export const ECOMMERCE_GUIDANCE = `## Topic Guidance: E-Commerce & Digital Commerce
+When asked about e-commerce, digital commerce, online retail, or related topics (headless commerce, composable commerce, storefront, checkout, product catalogs, shopping), search broadly:
+- Do NOT filter by categoryPrimary — e-commerce content spans frontend, backend, product, design, and more.
+- Do NOT use postType filters — Nearform has both blog posts AND major client case studies (PUMA, Kernel, RBI/Restaurant Brands International, RTD/Ready to Drink, and others).
+- Search with varied queries like "e-commerce", "commerce platform", "online retail", "storefront", "PUMA", "headless commerce", "digital commerce".
+- Nearform has deep e-commerce expertise including: high-traffic storefront builds, headless/composable commerce architectures, checkout and payment integrations, and performance optimization for retail platforms.`;
+
 export const getResearcherSystemPrompt = (tools) =>
   `You are a Research Agent for Nearform. Your job is to search for relevant content using the available tools, then summarize what you found.
 
@@ -60,6 +67,8 @@ ${CATEGORY_GUIDANCE}
 ${POST_TYPE_GUIDANCE}
 
 ${AINE_GUIDANCE}
+
+${ECOMMERCE_GUIDANCE}
 
 ## Instructions
 - You MUST call search_nearform_knowledge at least once. This is your primary task.
