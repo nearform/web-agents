@@ -96,7 +96,7 @@ export const runResearcher = async ({
   const result = await runAgentLoop({
     systemPrompt: getSystemPrompt(searchTools),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
-${existingContext ? `\nWe already have this content in the notepad:\n${existingContext}\n\nThe user wants to build on it. Focus research on new/additional information for their follow-up question.\n` : ""}
+${existingContext ? `\nWe already have this content in the notepad:\n${existingContext}\n\nThe user wants to build on it. Focus research on new/additional information for their follow-up question.\nIMPORTANT: The notepad above was built from earlier searches. When choosing categoryPrimary for follow-up searches, consider ALL categories relevant to both the existing content AND the new question — don't narrow to just the follow-up topic. If the original content was about "ai" topics, keep "ai" in your category filters even if the follow-up seems like a different sub-topic. When in doubt, omit categoryPrimary entirely to avoid filtering out relevant results.\n` : ""}
 User question: ${query}`,
     tools: searchTools,
     onActivity,

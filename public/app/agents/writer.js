@@ -1,4 +1,4 @@
-import { createSession, promptSession } from "./prompt-api.js";
+import { createSession, promptSessionStreaming } from "./prompt-api.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 
@@ -33,6 +33,8 @@ export const runWriter = async ({
   onActivity,
   existingNotepad,
   skipNotepadWrite = false,
+  onStreamChunk,
+  onNotepadStreamChunk,
 }) => {
   const emit = (type, detail) => {
     if (onActivity) {
@@ -60,7 +62,11 @@ ${existingNotepad}
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above.`;
 
     debug("Writer", "=== CHAT-ONLY PROMPT ===\n" + chatPrompt);
-    const chatReply = await promptSession(session, chatPrompt);
+    const chatReply = await promptSessionStreaming(
+      session,
+      chatPrompt,
+      onStreamChunk,
+    );
     debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
 
     session.destroy();
@@ -100,7 +106,11 @@ User request: ${originalQuery}`;
   }
 
   debug("Writer", "=== CONTENT PROMPT ===\n" + contentPrompt);
-  const notepadContent = await promptSession(session, contentPrompt);
+  const notepadContent = await promptSessionStreaming(
+    session,
+    contentPrompt,
+    onNotepadStreamChunk,
+  );
   debug("Writer", "=== NOTEPAD CONTENT ===\n" + notepadContent);
 
   // Write to notepad
@@ -110,9 +120,10 @@ User request: ${originalQuery}`;
 
   // Generate chat reply
   emit("prompt", "Composing chat reply");
-  const chatReply = await promptSession(
+  const chatReply = await promptSessionStreaming(
     session,
     `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above.`,
+    onStreamChunk,
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
 

@@ -30,7 +30,7 @@ needs_research = false when:
   try {
     const raw = await promptSessionConstrained(
       session,
-      `Existing notepad summary (first 200 chars): "${existingNotepad.slice(0, 200)}"\n\nUser follow-up: "${userMessage}"`,
+      `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"\n\nUser follow-up: "${userMessage}"`,
       TRIAGE_SCHEMA,
     );
     const parsed = JSON.parse(raw);
@@ -54,6 +54,8 @@ export const runCoordinator = async ({
   tools,
   onActivity,
   existingNotepad,
+  onStreamChunk,
+  onNotepadStreamChunk,
 }) => {
   const emit = (type, detail) => {
     if (onActivity) {
@@ -111,6 +113,8 @@ export const runCoordinator = async ({
       onActivity,
       existingNotepad,
       skipNotepadWrite,
+      onStreamChunk,
+      onNotepadStreamChunk,
     });
   } catch (err) {
     emit("error", `Writing failed: ${err.message}`);

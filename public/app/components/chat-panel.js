@@ -34,6 +34,7 @@ export const ChatPanel = ({
   onChoice,
   onStartFresh,
   isProcessing,
+  streamingText,
   pendingChoice,
   hasNotepad,
 }) => {
@@ -97,6 +98,15 @@ export const ChatPanel = ({
           `,
         )}
         ${isProcessing &&
+        streamingText &&
+        html`
+          <div className="chat-bubble chat-bubble--assistant">
+            <span className="chat-agent-label">Coordinator</span>
+            <${ChatBubbleText} text=${streamingText} isAssistant=${true} />
+          </div>
+        `}
+        ${isProcessing &&
+        !streamingText &&
         html`
           <div className="chat-bubble chat-bubble--assistant">
             <div className="chat-typing">

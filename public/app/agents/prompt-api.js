@@ -54,6 +54,18 @@ const withTimeout = (promise, ms) =>
     ),
   ]);
 
+export const promptSessionStreaming = async (session, message, onChunk) => {
+  debug("prompt-api", "Streaming prompt, message length:", message.length);
+  const stream = session.promptStreaming(message);
+  let result = "";
+  for await (const chunk of stream) {
+    result += chunk;
+    if (onChunk) onChunk(result);
+  }
+  debug("prompt-api", "Streaming complete, length:", result.length);
+  return result;
+};
+
 export const promptSessionConstrained = async (
   session,
   message,

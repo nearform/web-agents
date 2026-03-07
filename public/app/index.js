@@ -15,6 +15,7 @@ export const App = () => {
   const [notepadContent, setNotepadContent] = React.useState("");
   const [tools, setTools] = React.useState([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [streamingText, setStreamingText] = React.useState(null);
   const [status, setStatus] = React.useState("Initializing...");
   const [pendingQuery, setPendingQuery] = React.useState(null);
 
@@ -47,6 +48,7 @@ export const App = () => {
   const executeCoordinator = React.useCallback(
     async (text, existingNotepad) => {
       setIsProcessing(true);
+      setStreamingText(null);
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -54,10 +56,14 @@ export const App = () => {
           tools: currentTools,
           onActivity,
           existingNotepad,
+          onStreamChunk: (chunk) => setStreamingText(chunk),
+          onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
         });
 
+        setStreamingText(null);
         setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
       } catch (err) {
+        setStreamingText(null);
         setMessages((prev) => [
           ...prev,
           {
@@ -162,6 +168,7 @@ export const App = () => {
           onChoice=${handleChoice}
           onStartFresh=${handleStartFresh}
           isProcessing=${isProcessing}
+          streamingText=${streamingText}
           pendingChoice=${!!pendingQuery}
           hasNotepad=${!!notepadContent}
         />
