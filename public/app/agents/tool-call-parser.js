@@ -1,23 +1,19 @@
 /* global console:false */
 import { debug } from "../util/debug.js";
 
-const TOOL_CALL_REGEX = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g;
-
 /**
  * Try to fix common JSON issues from small models:
  * - Unescaped newlines inside string values
  * - Trailing commas
  */
 const tryParseJson = (raw) => {
-  // First try raw
   try {
     return JSON.parse(raw);
   } catch {
     // noop
   }
 
-  // Try fixing unescaped newlines inside JSON string values
-  // Replace actual newlines that appear between quotes with \n
+  // Fix unescaped newlines outside of quoted strings
   let fixed = raw.replace(
     /("(?:[^"\\]|\\.)*")|(\n)/g,
     (match, quoted, newline) => {
@@ -35,7 +31,7 @@ const tryParseJson = (raw) => {
     // noop
   }
 
-  // Last resort: try to extract name and args separately
+  // Last resort: extract name and args separately via regex
   const nameMatch = raw.match(/"name"\s*:\s*"([^"]+)"/);
   const argsMatch = raw.match(/"args"\s*:\s*(\{[\s\S]*\})\s*$/);
   if (nameMatch) {
@@ -44,7 +40,6 @@ const tryParseJson = (raw) => {
       try {
         result.args = JSON.parse(argsMatch[1]);
       } catch {
-        // If args has a content field, extract it as raw text
         const contentMatch = argsMatch[1].match(
           /"content"\s*:\s*"([\s\S]*)"\s*\}?$/,
         );
@@ -59,34 +54,55 @@ const tryParseJson = (raw) => {
   return null;
 };
 
+/**
+ * Normalize model output to handle common small-model quirks:
+ * - Backtick wrapping: ```tool_call>...``` or `<tool_call>...`
+ * - Missing opening <: tool_call>...</tool_call>
+ * - Extra whitespace
+ */
+const normalizeText = (text) => {
+  let t = text;
+  // Strip backticks wrapping tool_call blocks
+  t = t.replace(/`+/g, "");
+  // Fix missing opening < on tool_call tags
+  t = t.replace(/(?<![<])tool_call>/g, "<tool_call>");
+  // Fix missing opening < on /tool_call closing tags
+  t = t.replace(/(?<![<])\/tool_call>/g, "</tool_call>");
+  return t;
+};
+
+const TOOL_CALL_REGEX = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g;
+
 export const parseToolCalls = (text) => {
+  const normalized = normalizeText(text);
+
+  if (normalized !== text) {
+    debug("tool-parser", "Normalized text (was different from raw)");
+  }
+
   const calls = [];
   let match;
   TOOL_CALL_REGEX.lastIndex = 0;
 
-  while ((match = TOOL_CALL_REGEX.exec(text)) !== null) {
+  while ((match = TOOL_CALL_REGEX.exec(normalized)) !== null) {
     const raw = match[1].trim();
     debug("tool-parser", "Raw tool_call block:", raw);
 
     const parsed = tryParseJson(raw);
     if (parsed?.name) {
-      calls.push({
-        name: parsed.name,
-        args: parsed.args || {},
-      });
+      calls.push({ name: parsed.name, args: parsed.args || {} });
       debug("tool-parser", "Parsed tool call:", parsed.name, parsed.args);
     } else {
       console.warn("[tool-parser] Failed to parse tool_call:", raw);
     }
   }
 
-  // Fallback: check for JSON-like tool invocations without XML tags
-  // e.g. model outputs: {"name": "take_notes", "args": {...}}
-  if (calls.length === 0 && !hasToolCalls(text)) {
+  // Fallback: look for JSON objects with a "name" field matching known tools
+  if (calls.length === 0) {
     const jsonPattern =
-      /\{\s*"name"\s*:\s*"(take_notes|clear_notes|search_nearform_knowledge)"[\s\S]*?\}/g;
+      /\{\s*"name"\s*:\s*"(take_notes|clear_notes|search_nearform_knowledge)"\s*,\s*"args"\s*:\s*\{[^}]*\}\s*\}/g;
     let jsonMatch;
-    while ((jsonMatch = jsonPattern.exec(text)) !== null) {
+    while ((jsonMatch = jsonPattern.exec(normalized)) !== null) {
       const parsed = tryParseJson(jsonMatch[0]);
       if (parsed?.name) {
         debug("tool-parser", "Fallback parsed tool call:", parsed.name);
@@ -95,11 +111,20 @@ export const parseToolCalls = (text) => {
     }
   }
 
+  if (calls.length === 0) {
+    debug(
+      "tool-parser",
+      "No tool calls found. Raw output:",
+      text.slice(0, 500),
+    );
+  }
+
   return calls;
 };
 
 export const hasToolCalls = (text) => {
-  return /<tool_call>/.test(text);
+  const normalized = normalizeText(text);
+  return /<tool_call>/.test(normalized);
 };
 
 export const formatToolSchemas = (tools) => {
