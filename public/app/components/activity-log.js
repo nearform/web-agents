@@ -46,9 +46,9 @@ const getIcon = (type) => {
 const formatDetail = (detail) => {
   if (typeof detail === "string") return detail;
   if (detail?.name) {
-    return `${detail.name}(${detail.args ? JSON.stringify(detail.args).slice(0, 100) : ""})`;
+    return `${detail.name}(${detail.args ? JSON.stringify(detail.args) : ""})`;
   }
-  return JSON.stringify(detail).slice(0, 150);
+  return JSON.stringify(detail);
 };
 
 const ActivityEntry = ({ entry, onClick }) => {
@@ -70,7 +70,7 @@ const ActivityEntry = ({ entry, onClick }) => {
       <i className="${getIcon(entry.type)}"></i>
       <span className="activity-agent">${entry.agent}</span>
       <span className="activity-detail">
-        ${detailStr.slice(0, expanded ? 500 : 120)}
+        ${expanded ? detailStr : detailStr.slice(0, 120)}
         ${!expanded && detailStr.length > 120 ? "..." : ""}
       </span>
     </div>

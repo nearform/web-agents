@@ -196,7 +196,7 @@ export const runAgentLoop = async ({
 
     if (response.action === "final_answer") {
       lastResponse = response.text || "";
-      emit("response", lastResponse.slice(0, 200));
+      emit("response", lastResponse);
       debug(agentName, "Final answer received, ending loop");
       break;
     }
@@ -224,7 +224,7 @@ export const runAgentLoop = async ({
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + truncated);
         emit("tool-result", {
           name: tc.name,
-          result: truncated,
+          result: resultStr,
         });
         resultMessage = formatToolResult(tc.name, truncated);
       } catch (err) {
