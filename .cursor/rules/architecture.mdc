@@ -1,0 +1,56 @@
+---
+description: Project architecture and file organization guidelines
+alwaysApply: true
+---
+
+# Project Architecture Guidelines
+
+## Overview
+- Always use pure JavaScript. Not TypeScript or JSX.
+- Always use pure CSS. Not a build-produced framework or library.
+
+## JavaScript
+
+### Formatting
+- Use 2 spaces for indentation
+- Use double quotes for strings unless interpolation is needed
+- Use semicolons consistently
+- Use trailing commas in objects and arrays
+- Maximum line length: 100 characters
+
+### Naming Conventions
+- Use camelCase for variables and functions
+- Use PascalCase for classes and components
+- Use UPPER_SNAKE_CASE for constants
+- Use descriptive names that explain intent
+
+### Function Guidelines
+- Keep functions small and focused (ideally < 20 lines)
+- Use pure functions when possible
+- Prefer const over let, avoid var
+- Prefer arrow functions.
+
+## File Organization
+
+### Directory Structure
+- Keep related files together in logical directories
+- Use descriptive directory names that reflect their purpose
+- Separate concerns (presentation, data, utilities)
+- Group by feature when appropriate
+
+### File Naming
+- Use kebab-case for file and directory names
+- Use consistent naming patterns across the project
+
+## Module Organization
+
+### Imports and Exports
+- Use ESM `import`/`export` syntax exclusively
+- Use named exports for multiple exports from a module
+- Use relative paths for local modules WITH file extension: `./foo/bar.js`
+
+### Dependencies
+- Minimize external dependencies
+- Prefer ESM-compatible versions when available
+- Use specific versions to ensure stability
+- Document all external dependencies and their CDN sources

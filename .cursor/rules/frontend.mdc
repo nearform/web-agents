@@ -1,0 +1,101 @@
+---
+description: Guidelines for frontend code
+globs: public/**/*.js,public/**/*.html,public/**/*.css
+alwaysApply: false
+---
+
+# Frontend Development Guidelines
+
+## Local Development
+
+- Development server URL: http://localhost:4610/public/
+- The dev server is already running during development - navigate directly to test
+- Start with `npx serve -l 4610` from the project root if needed
+
+## Core Philosophy
+
+The frontend of this project uses modern web development without build tools. All code should run directly in the browser using native ES modules and modern JavaScript features.
+
+## ES Modules
+
+### Import/Export Usage
+- Use ES6 `import`/`export` syntax exclusively
+- Use relative paths for local modules: `./foo/bar.js`
+- Use absolute paths for external CDN modules: `https://esm.sh/...`
+- Avoid bundling or transpilation
+
+## Import Maps
+- For frontend code, use an `importmap` with `esm.sh` as the provider.
+- Add `?external=react,react-dom` to packages depending on either.
+- Check full package path at `esm.sh` before adding field entry.
+- Add fully version pinned modules.
+    - YES `htm@3.1.1`
+    - NO `htm`
+    - NO `htm@^3`
+
+```html
+<script type="importmap">
+  {
+    "imports": {
+        "htm": "https://esm.sh/htm@3.1.1?external=react,react-dom",
+        // ... other dependencies
+    }
+  }
+</script>
+```
+
+## Browser Compatibility
+
+### Modern JavaScript Features
+- Use native ES6+ features (arrow functions, destructuring, template literals)
+- Use `const`/`let` instead of `var`
+- Use async/await for asynchronous operations
+- Use native fetch API for HTTP requests
+
+## Stack
+
+### Phosphor Icons
+
+- Use Phosphor Icons for all iconography with docs at: https://phosphoricons.com/
+- Include the CSS library via CDN: `https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/style.css`
+- Use icon classes directly in HTML: `<i className="ph ph-push-pin"></i>`
+- Icons are available in multiple weights: `ph-thin`, `ph-light`, `ph-regular`, `ph-bold`, `ph-fill`, `ph-duotone`
+- Default weight is `ph-regular` if no weight class is specified
+
+### CSS and HTML
+- Use modern CSS features (Grid, Flexbox, custom properties)
+- Use https://picocss.com/ for CSS library with docs at https://picocss.com/docs.
+- Use semantic HTML5 elements
+- Leverage native browser APIs
+- Avoid polyfills when possible
+
+### HTM Template Strings
+- Use `htm` for JSX-like syntax without build tools
+- Use `=${...}` for JavaScript expressions in template strings
+- Use `=${{ ... }}` for object literals in template strings (NOT `={{ ... }}`)
+- Use `=${[ ... ]}` for array literals in template strings
+- Use `=${functionName}` for function references
+- Use `=${variable}` for variable references
+- Use `=${condition && html`...`}` for conditional rendering
+- Use `=${array.map(item => html`...`)}` for list rendering
+
+#### Style Attributes
+- Always use object syntax for `style` attributes: `style=${{ ... }}`
+- Use camelCase for CSS properties: `backgroundColor`, `fontSize`, `marginTop`
+- NEVER use string syntax: `style="margin: 1px solid red;"` ❌
+- ALWAYS use object syntax: `style=${{ margin: "1px solid red" }}` ✅
+#### Style Attributes
+- **Prefer CSS classes in `public/styles.css` over inline styles whenever possible**
+- Create semantic class names (e.g., `.status-icon-wrapper`, `.sortable-header`) for reusable styles
+- Only use inline `style` attributes for truly dynamic values computed at runtime
+- When inline styles are necessary, always use object syntax: `style=${{ ... }}`
+- Use camelCase for CSS properties: `backgroundColor`, `fontSize`, `marginTop`
+- NEVER use string syntax: `style="margin: 1px solid red;"` ❌
+- ALWAYS use object syntax: `style=${{ margin: "1px solid red" }}` ✅
+
+## CDN Dependencies
+
+### External Libraries
+- Use bare specifiers for all libraries (`"react"`, etc.) and then `importmap` entries to bring in.
+- Prefer ESM-compatible versions when available, but `esm.sh` handles for you.
+- Use specific versions to ensure stability

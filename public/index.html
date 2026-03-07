@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="https://nearform.com/favicon.ico"
+      type="image/x-icon"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      href="https://nearform.com/favicon.ico"
+      type="image/x-icon"
+    />
+    <link
+      rel="icon"
+      href="https://nearform.com/favicon.svg"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="icon" href="https://nearform.com/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>WebMCP Demo</title>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "htm": "https://esm.sh/htm@3.1.1?dev&external=react,react-dom",
+          "react": "https://esm.sh/react@19.2.3?dev&external=react,react-dom",
+          "react/jsx-runtime": "https://esm.sh/react@19.2.3/jsx-runtime?dev&external=react,react-dom",
+          "react-dom": "https://esm.sh/react-dom@19.2.3?dev&external=react,react-dom",
+          "react-dom/client": "https://esm.sh/react-dom@19.2.3/client?dev&external=react,react-dom",
+          "react-is": "https://esm.sh/react-is@19.2.3?dev&external=react,react-dom",
+          "react-select": "https://esm.sh/react-select@5.10.2?dev&external=react,react-dom"
+        }
+      }
+    </script>
+    <script type="module">
+      import { createRoot } from "react-dom/client";
+      import { createElement } from "react";
+      import htm from "htm";
+      import { App } from "./app/index.js";
+
+      const html = htm.bind(createElement);
+      const root = createRoot(document.getElementById("root"));
+      root.render(html`<${App} />`);
+    </script>
+  </body>
+</html>

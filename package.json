@@ -1,0 +1,22 @@
+{
+  "name": "webmcp-demo",
+  "version": "0.0.1",
+  "description": "WebMCP in the browser.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx serve -p 4610",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint . --quiet",
+    "pretty:fix": "prettier . --write",
+    "pretty:check": "prettier . --check",
+    "check": "npm run lint:check && npm run pretty:check",
+    "format": "npm run lint:fix && npm run pretty:fix"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "llm-splitter": "^0.2.0",
+    "prettier": "^3.7.4"
+  }
+}
