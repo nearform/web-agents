@@ -224,7 +224,7 @@ export const runAgentLoop = async ({
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + truncated);
         emit("tool-result", {
           name: tc.name,
-          result: truncated.slice(0, 200),
+          result: truncated,
         });
         resultMessage = formatToolResult(tc.name, truncated);
       } catch (err) {

@@ -51,15 +51,20 @@ const formatDetail = (detail) => {
   return JSON.stringify(detail).slice(0, 150);
 };
 
-const ActivityEntry = ({ entry }) => {
+const ActivityEntry = ({ entry, onClick }) => {
   const [expanded, setExpanded] = React.useState(false);
   const isToolCall = entry.type === "tool-call";
   const detailStr = formatDetail(entry.detail);
 
+  const handleClick = () => {
+    if (isToolCall) setExpanded(!expanded);
+    onClick(entry);
+  };
+
   return html`
     <div
       className="activity-entry ${AGENT_COLORS[entry.agent] || ""}"
-      onClick=${isToolCall ? () => setExpanded(!expanded) : undefined}
+      onClick=${handleClick}
     >
       <span className="activity-time">${formatTime(entry.timestamp)}</span>
       <i className="${getIcon(entry.type)}"></i>
@@ -72,8 +77,49 @@ const ActivityEntry = ({ entry }) => {
   `;
 };
 
+const formatDetailRaw = (detail) => {
+  if (detail == null) return "";
+  if (typeof detail === "string") return detail;
+  try {
+    return JSON.stringify(detail, null, 2);
+  } catch {
+    return String(detail);
+  }
+};
+
+const DetailModal = ({ entry, onClose }) => {
+  if (!entry) return null;
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return html`
+    <div className="activity-modal-overlay" onClick=${handleOverlayClick}>
+      <div className="activity-modal">
+        <div className="activity-modal-header">
+          <div>
+            <strong>${entry.agent}</strong>
+            <span className="activity-modal-type">${entry.type}</span>
+            <span className="activity-modal-time"
+              >${formatTime(entry.timestamp)}</span
+            >
+          </div>
+          <button className="activity-modal-close" onClick=${onClose}>
+            <i className="ph ph-x"></i>
+          </button>
+        </div>
+        <pre className="activity-modal-body">
+${formatDetailRaw(entry.detail)}</pre
+        >
+      </div>
+    </div>
+  `;
+};
+
 export const ActivityLog = ({ activities }) => {
   const endRef = React.useRef(null);
+  const [selectedEntry, setSelectedEntry] = React.useState(null);
 
   React.useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,10 +139,19 @@ export const ActivityLog = ({ activities }) => {
           </div>
         `}
         ${activities.map(
-          (entry, i) => html`<${ActivityEntry} key=${i} entry=${entry} />`,
+          (entry, i) =>
+            html`<${ActivityEntry}
+              key=${i}
+              entry=${entry}
+              onClick=${setSelectedEntry}
+            />`,
         )}
         <div ref=${endRef}></div>
       </div>
+      <${DetailModal}
+        entry=${selectedEntry}
+        onClose=${() => setSelectedEntry(null)}
+      />
     </div>
   `;
 };
