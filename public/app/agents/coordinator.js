@@ -1,14 +1,53 @@
 import { runResearcher } from "./researcher.js";
 import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
+import { createSession, promptSessionConstrained } from "./prompt-api.js";
+
+const TRIAGE_SCHEMA = {
+  type: "object",
+  properties: {
+    needs_research: { type: "boolean" },
+  },
+  required: ["needs_research"],
+};
+
+async function triageFollowUp(userMessage, existingNotepad) {
+  const session = await createSession(
+    `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
+
+Reply with JSON: {"needs_research": true} or {"needs_research": false}.
+
+needs_research = true when:
+- The user asks a factual question about a new topic not covered in the notepad
+- The user asks about a specific company, person, project, or technology not in the notepad
+- The user explicitly asks to search, find, or look up something
+
+needs_research = false when:
+- The user asks to rewrite, reformat, shorten, expand, or change tone of existing content
+- The user asks for a different output format (email, slides, bullets)
+- The question can be fully answered from the existing notepad content`,
+  );
+  try {
+    const raw = await promptSessionConstrained(
+      session,
+      `Existing notepad summary (first 200 chars): "${existingNotepad.slice(0, 200)}"\n\nUser follow-up: "${userMessage}"`,
+      TRIAGE_SCHEMA,
+    );
+    const parsed = JSON.parse(raw);
+    return parsed.needs_research === true;
+  } finally {
+    session.destroy();
+  }
+}
 
 /**
  * Coordinator agent: decides whether to research or reuse notepad,
  * delegates to Researcher and Writer agents, returns a chat answer.
  *
- * Decision logic is deterministic based on existingNotepad:
- * - existingNotepad provided → skip research, skip notepad write (chat-only answer)
- * - existingNotepad absent   → full pipeline (research → notepad → chat)
+ * Decision logic:
+ * - existingNotepad absent              → full pipeline (research → notepad → chat)
+ * - existingNotepad + LLM triage=true   → research runs, notepad merged
+ * - existingNotepad + LLM triage=false  → skip research, chat-only answer
  */
 export const runCoordinator = async ({
   userMessage,
@@ -30,7 +69,15 @@ export const runCoordinator = async ({
   emit("start", "Analyzing your request...");
 
   let researchBrief = null;
-  const needsResearch = !existingNotepad;
+  let needsResearch = !existingNotepad;
+  if (!needsResearch) {
+    try {
+      needsResearch = await triageFollowUp(userMessage, existingNotepad);
+      debug("Coordinator", `Triage result: needsResearch=${needsResearch}`);
+    } catch (err) {
+      debug("Coordinator", `Triage failed, skipping research: ${err.message}`);
+    }
+  }
 
   if (needsResearch) {
     // No existing notepad — run the full research pipeline
