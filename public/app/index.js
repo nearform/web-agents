@@ -17,7 +17,6 @@ export const App = () => {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [streamingText, setStreamingText] = React.useState(null);
   const [status, setStatus] = React.useState("Initializing...");
-  const [pendingQuery, setPendingQuery] = React.useState(null);
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
@@ -82,45 +81,9 @@ export const App = () => {
   const handleSend = React.useCallback(
     (text) => {
       setMessages((prev) => [...prev, { role: "user", text }]);
-
-      if (notepadContent) {
-        // Notepad has content — ask user whether to start fresh or build on it
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            type: "choice",
-            text: "The notepad already has content. Would you like to start fresh or build on what's there?",
-          },
-        ]);
-        setPendingQuery(text);
-      } else {
-        // No notepad content — run immediately
-        executeCoordinator(text, undefined);
-      }
+      executeCoordinator(text, notepadContent || undefined);
     },
     [notepadContent, executeCoordinator],
-  );
-
-  const handleChoice = React.useCallback(
-    (choice) => {
-      if (!pendingQuery) return;
-      const query = pendingQuery;
-      setPendingQuery(null);
-
-      if (choice === "fresh") {
-        // Clear everything, then run
-        setMessages([{ role: "user", text: query }]);
-        setActivities([]);
-        setNotepadContent("");
-        updateNotepad("");
-        executeCoordinator(query, undefined);
-      } else {
-        // Build on existing
-        executeCoordinator(query, notepadContent);
-      }
-    },
-    [pendingQuery, notepadContent, executeCoordinator],
   );
 
   const handleStartFresh = React.useCallback(() => {
@@ -165,11 +128,9 @@ export const App = () => {
         <${ChatPanel}
           messages=${messages}
           onSend=${handleSend}
-          onChoice=${handleChoice}
           onStartFresh=${handleStartFresh}
           isProcessing=${isProcessing}
           streamingText=${streamingText}
-          pendingChoice=${!!pendingQuery}
           hasNotepad=${!!notepadContent}
         />
         <${ActivityLog} activities=${activities} />

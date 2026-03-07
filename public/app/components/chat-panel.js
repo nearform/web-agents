@@ -31,25 +31,23 @@ const ChatBubbleText = ({ text, isAssistant }) => {
 export const ChatPanel = ({
   messages,
   onSend,
-  onChoice,
   onStartFresh,
   isProcessing,
   streamingText,
-  pendingChoice,
   hasNotepad,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const input = e.currentTarget.elements.message;
     const text = input.value.trim();
-    if (!text || isProcessing || pendingChoice) return;
+    if (!text || isProcessing) return;
     onSend(text);
     input.value = "";
   };
 
-  const inputDisabled = isProcessing || pendingChoice;
+  const inputDisabled = isProcessing;
   const hasMessages = messages.length > 0;
-  const showStartFresh = hasNotepad && !isProcessing && !pendingChoice;
+  const showStartFresh = hasNotepad && !isProcessing;
 
   return html`
     <div className="chat-panel">
@@ -74,26 +72,6 @@ export const ChatPanel = ({
                 text=${msg.text}
                 isAssistant=${msg.role === "assistant"}
               />
-              ${msg.type === "choice" &&
-              html`
-                <div className="chat-choice-buttons">
-                  <button
-                    className="chat-choice-btn chat-choice-btn--fresh"
-                    onClick=${() => onChoice("fresh")}
-                    disabled=${!pendingChoice}
-                  >
-                    <i className="ph ph-arrow-counter-clockwise"></i> Start
-                    Fresh
-                  </button>
-                  <button
-                    className="chat-choice-btn chat-choice-btn--build"
-                    onClick=${() => onChoice("build")}
-                    disabled=${!pendingChoice}
-                  >
-                    <i className="ph ph-plus-circle"></i> Build On Existing
-                  </button>
-                </div>
-              `}
             </div>
           `,
         )}
@@ -119,7 +97,7 @@ export const ChatPanel = ({
           <div className="chat-start-fresh">
             <button className="chat-start-fresh-btn" onClick=${onStartFresh}>
               <i className="ph ph-arrow-counter-clockwise"></i> Clear notepad &
-              start over
+              start a new topic
             </button>
           </div>
         `}
