@@ -34,7 +34,7 @@ Category mapping tips:
 When the topic clearly matches one or more categories, include categoryPrimary with ALL relevant categories (it's an array — use multiple). Only omit categoryPrimary for very broad or cross-cutting queries where filtering would miss results.
 
 ## Topic Guidance: AI-Native Engineering
-When asked about AI-native engineering, AI-driven development, or related topics (MCP, Model Context Protocol, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
+When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
 - Have a bias for posts from 2025-on.
 - Use category ["ai"] but also try without category filters since these topics span multiple areas.
 - Search with queries like "AI native engineering", "AI driven development", "MCP model context protocol", "BMAD AI", "agentic", "AI IDE", "developers AI tools".

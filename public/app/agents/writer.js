@@ -11,7 +11,11 @@ const SYSTEM_PROMPT = `You are a Writer Agent for Nearform. You compose well-for
 ## Content Rules
 - ONLY use facts and URLs from the research findings provided.
 - Do NOT hallucinate URLs. Only cite URLs explicitly present in the research.
-- Cite sources using markdown links: [Title](URL). Each URL may appear at most once.
+- Cite sources as markdown links. The format is EXACTLY: [Title](URL) — the ] must come BEFORE the (.
+  CORRECT: [My Article](https://nearform.com/insights/my-article)
+  WRONG:   [My Article (https://nearform.com/insights/my-article)]
+- If a date is available, put it AFTER the link, not inside it: [Title](URL) (2025-01-15)
+- Each URL may appear at most once.
 - URLs must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
 - Replace "/blog/" with "/insights/" in any URLs.
 - When referring to source material, use the words "articles", "sources", or "citations". Never say "chunks", "context", or "tool results".
@@ -19,7 +23,7 @@ const SYSTEM_PROMPT = `You are a Writer Agent for Nearform. You compose well-for
 
 ## Format
 - Use markdown: headings (##), bullet points, **bold** for emphasis.
-- Include source links and dates when available.
+- Include source citations as [Title](URL) links.
 - Keep the summary concise but comprehensive.
 - Output ONLY the markdown content, no preamble or wrapping.`;
 
@@ -28,6 +32,7 @@ export const runWriter = async ({
   originalQuery,
   onActivity,
   existingNotepad,
+  skipNotepadWrite = false,
 }) => {
   const emit = (type, detail) => {
     if (onActivity) {
@@ -37,15 +42,40 @@ export const runWriter = async ({
 
   emit("start", "Writer starting");
 
-  // Step 1: Generate notepad content (unconstrained)
-  emit("prompt", "Composing notepad content");
   const session = await createSession(SYSTEM_PROMPT);
+
+  if (skipNotepadWrite) {
+    // Chat-only mode: notepad stays untouched, produce answer from notepad context
+    debug("Writer", "skipNotepadWrite=true — chat-only mode");
+    emit("prompt", "Composing chat reply from existing research");
+
+    const chatPrompt = `Using the research notepad below as your source material, answer the user's question.
+IMPORTANT: ONLY use URLs that appear in the research notepad below. Do NOT invent or guess URLs.
+
+User's request: ${originalQuery}
+
+Research notepad:
+${existingNotepad}
+
+Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above.`;
+
+    debug("Writer", "=== CHAT-ONLY PROMPT ===\n" + chatPrompt);
+    const chatReply = await promptSession(session, chatPrompt);
+    debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+
+    session.destroy();
+    emit("done", "Writer finished");
+    return chatReply;
+  }
+
+  // Full mode: write research to notepad, then produce chat answer
+  emit("prompt", "Composing notepad content");
 
   const hasResearch = researchBrief && researchBrief.trim().length > 0;
   let contentPrompt;
 
   if (hasResearch && existingNotepad) {
-    contentPrompt = `Update the existing notepad content based on new research findings.
+    contentPrompt = `Update the existing research notepad based on new research findings.
 
 Original question: ${originalQuery}
 
@@ -57,35 +87,32 @@ Extend and integrate new findings into the existing content rather than replacin
 New research findings:
 ${researchBrief}`;
   } else if (hasResearch) {
-    contentPrompt = `Write a well-formatted markdown summary for the notepad.
+    contentPrompt = `Write a well-formatted markdown research summary for the notepad.
 
 Original question: ${originalQuery}
 
 Research findings:
 ${researchBrief}`;
   } else {
-    contentPrompt = `Revise and improve the existing notepad content based on the user's follow-up request. No new research was needed — just rework the existing content.
+    contentPrompt = `Write a research summary for the notepad based on the user's question.
 
-User request: ${originalQuery}
-
-Current notepad content:
-${existingNotepad}`;
+User request: ${originalQuery}`;
   }
 
   debug("Writer", "=== CONTENT PROMPT ===\n" + contentPrompt);
   const notepadContent = await promptSession(session, contentPrompt);
   debug("Writer", "=== NOTEPAD CONTENT ===\n" + notepadContent);
 
-  // Step 2: Write to notepad programmatically
+  // Write to notepad
   emit("tool-call", { name: "take_notes", args: {} });
   await callTool("take_notes", { content: notepadContent });
   emit("tool-result", { name: "take_notes", result: "written" });
 
-  // Step 3: Generate a short chat reply
+  // Generate chat reply
   emit("prompt", "Composing chat reply");
   const chatReply = await promptSession(
     session,
-    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 specific source citations as markdown links (e.g. [Title](https://nearform.com/insights/...)). Use only real URLs from the research.`,
+    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above.`,
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
 

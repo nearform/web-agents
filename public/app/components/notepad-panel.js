@@ -30,7 +30,7 @@ export const NotepadPanel = ({ content, onUpdateContent }) => {
       <div className="notepad-header">
         <div className="notepad-header-left">
           <i className="ph ph-notepad"></i>
-          <h2>Notepad</h2>
+          <h2>Research Notepad</h2>
         </div>
         ${content &&
         !editing &&
@@ -66,8 +66,8 @@ export const NotepadPanel = ({ content, onUpdateContent }) => {
       ${!content &&
       html`
         <div className="notepad-description">
-          Your working document. Agents write here, and you can edit it too.
-          Content is used as context for follow-up queries.
+          Research findings will appear here. You can edit them to refine
+          context for follow-up queries.
         </div>
       `}
       <div className="notepad-content">
@@ -84,7 +84,7 @@ export const NotepadPanel = ({ content, onUpdateContent }) => {
               />`
             : html`
                 <div className="notepad-empty">
-                  The Writer agent will compose content here.
+                  Research findings will appear here once you ask a question.
                 </div>
               `}
       </div>
