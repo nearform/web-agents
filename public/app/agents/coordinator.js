@@ -46,8 +46,9 @@ export const runCoordinator = async ({
 
   // Step 3: Run writer
   emit("delegate", "Handing off to Writer agent");
+  let writerAnswer;
   try {
-    await runWriter({
+    writerAnswer = await runWriter({
       researchBrief,
       originalQuery: userMessage,
       tools,
@@ -61,8 +62,11 @@ export const runCoordinator = async ({
 
   emit("received", "Writing complete");
 
-  // Step 4: Synthesize final answer
+  // Step 4: Return the writer's conversational answer
   emit("done", "All agents finished");
 
-  return `I've researched your question and ${existingNotepad ? "updated" : "compiled"} the notepad. Here's a quick overview:\n\n${researchBrief.slice(0, 500)}${researchBrief.length > 500 ? "..." : ""}\n\nCheck the notepad panel for the full formatted result.`;
+  return (
+    writerAnswer ||
+    `I've ${existingNotepad ? "updated" : "written"} the notepad with my findings. Check the notepad panel for the full result.`
+  );
 };

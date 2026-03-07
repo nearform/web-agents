@@ -1,24 +1,15 @@
-import { runAgentLoop } from "./orchestrator.js";
-import { formatToolSchemas } from "./tool-call-parser.js";
+import { createSession, promptSession } from "./prompt-api.js";
+import { callTool } from "../bridge/tool-registry.js";
+import { debug } from "../util/debug.js";
 
-const getSystemPrompt = (
-  tools,
-) => `You are a Writer Agent for Nearform. Your job is to compose well-formatted summaries from research findings and write them to the shared notepad.
-
-## Tools
-${formatToolSchemas(tools)}
-
-## Response Format
-You MUST respond with JSON containing an "action" field.
-- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
-- To give your final answer: {"action": "final_answer", "text": "your confirmation here"}
+const SYSTEM_PROMPT = `You are a Writer Agent for Nearform. You compose well-formatted summaries from research findings.
 
 ## Brand Rules
 - Always use "Nearform" (lowercase 'f'), never "NearForm".
 - Nearform has acquired Formidable. Replace "Formidable", "Formidable Labs", or "Nearform Commerce" with "Nearform".
 
 ## Content Rules
-- All responses must ONLY use facts and URLs from the research findings provided.
+- ONLY use facts and URLs from the research findings provided.
 - Do NOT hallucinate URLs. Only cite URLs explicitly present in the research.
 - Cite sources using markdown links: [Title](URL). Each URL may appear at most once.
 - URLs must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
@@ -26,33 +17,56 @@ You MUST respond with JSON containing an "action" field.
 - When referring to source material, use the words "articles", "sources", or "citations". Never say "chunks", "context", or "tool results".
 - If no relevant information exists, state that clearly.
 
-## Instructions
-- Write a well-structured summary using take_notes. It replaces existing content, so include everything in one call.
-- Only call take_notes ONCE with the complete summary.
-- Format content with markdown: use headings (##), bullet points, and **bold** for emphasis.
+## Format
+- Use markdown: headings (##), bullet points, **bold** for emphasis.
 - Include source links and dates when available.
 - Keep the summary concise but comprehensive.
-- After calling take_notes, respond with action "final_answer" confirming what you wrote.`;
+- Output ONLY the markdown content, no preamble or wrapping.`;
 
 export const runWriter = async ({
   researchBrief,
   originalQuery,
-  tools,
   onActivity,
   existingNotepad,
 }) => {
-  const noteTools = tools.filter((t) => t.name === "take_notes");
+  const emit = (type, detail) => {
+    if (onActivity) {
+      onActivity({ agent: "Writer", type, detail, timestamp: Date.now() });
+    }
+  };
 
-  return runAgentLoop({
-    systemPrompt: getSystemPrompt(noteTools),
-    userMessage: `Based on the following research, compose a well-formatted summary and write it to the notepad.
+  emit("start", "Writer starting");
+
+  // Step 1: Generate notepad content (unconstrained)
+  emit("prompt", "Composing notepad content");
+  const session = await createSession(SYSTEM_PROMPT);
+
+  const contentPrompt = `Write a well-formatted markdown summary for the notepad.
 
 Original question: ${originalQuery}
 ${existingNotepad ? `\nExisting notepad content to build upon:\n${existingNotepad}\n\nExtend and integrate new findings into the existing content rather than replacing it.\n` : ""}
 Research findings:
-${researchBrief}`,
-    tools: noteTools,
-    onActivity,
-    agentName: "Writer",
-  });
+${researchBrief}`;
+
+  debug("Writer", "=== CONTENT PROMPT ===\n" + contentPrompt);
+  const notepadContent = await promptSession(session, contentPrompt);
+  debug("Writer", "=== NOTEPAD CONTENT ===\n" + notepadContent);
+
+  // Step 2: Write to notepad programmatically
+  emit("tool-call", { name: "take_notes", args: {} });
+  await callTool("take_notes", { content: notepadContent });
+  emit("tool-result", { name: "take_notes", result: "written" });
+
+  // Step 3: Generate a short chat reply
+  emit("prompt", "Composing chat reply");
+  const chatReply = await promptSession(
+    session,
+    "Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details.",
+  );
+  debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+
+  session.destroy();
+  emit("done", "Writer finished");
+
+  return chatReply;
 };

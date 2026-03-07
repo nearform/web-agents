@@ -1,4 +1,4 @@
-/* global LanguageModel:false */
+/* global LanguageModel:false, setTimeout:false */
 import { debug } from "../util/debug.js";
 
 const PROMPT_OPTIONS = {
