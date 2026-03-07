@@ -25,8 +25,8 @@ To use a tool, output a tool_call block exactly like this:
 - If no relevant information exists, state that clearly.
 
 ## Instructions
-- First, clear the notepad using clear_notes.
-- Then, write a well-structured summary using take_notes.
+- Write a well-structured summary using take_notes. It replaces existing content, so include everything in one call.
+- Only call take_notes ONCE with the complete summary.
 - Format content with markdown: use headings (##), bullet points, and **bold** for emphasis.
 - Include source links and dates when available.
 - Keep the summary concise but comprehensive.
@@ -38,9 +38,7 @@ export const runWriter = async ({
   tools,
   onActivity,
 }) => {
-  const noteTools = tools.filter(
-    (t) => t.name === "take_notes" || t.name === "clear_notes",
-  );
+  const noteTools = tools.filter((t) => t.name === "take_notes");
 
   return runAgentLoop({
     systemPrompt: getSystemPrompt(noteTools),
