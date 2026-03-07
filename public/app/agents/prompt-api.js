@@ -42,3 +42,14 @@ export const promptSession = async (session, message) => {
   debug("prompt-api", "Response length:", result.length);
   return result;
 };
+
+export const promptSessionConstrained = async (
+  session,
+  message,
+  responseConstraint,
+) => {
+  debug("prompt-api", "Constrained prompt, message length:", message.length);
+  const result = await session.prompt(message, { responseConstraint });
+  debug("prompt-api", "Constrained response length:", result.length);
+  return result;
+};

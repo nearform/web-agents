@@ -8,8 +8,10 @@ const getSystemPrompt = (
 ## Tools
 ${formatToolSchemas(tools)}
 
-To use a tool, output a tool_call block exactly like this:
-<tool_call>{"name": "tool_name", "args": {"param": "value"}}</tool_call>
+## Response Format
+You MUST respond with JSON containing an "action" field.
+- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
+- To give your final answer: {"action": "final_answer", "text": "your confirmation here"}
 
 ## Brand Rules
 - Always use "Nearform" (lowercase 'f'), never "NearForm".
@@ -30,7 +32,7 @@ To use a tool, output a tool_call block exactly like this:
 - Format content with markdown: use headings (##), bullet points, and **bold** for emphasis.
 - Include source links and dates when available.
 - Keep the summary concise but comprehensive.
-- Do NOT use tool_call in your final message — just confirm what you wrote.`;
+- After calling take_notes, respond with action "final_answer" confirming what you wrote.`;
 
 export const runWriter = async ({
   researchBrief,
@@ -48,6 +50,7 @@ Original question: ${originalQuery}
 
 Research findings:
 ${researchBrief}`,
+    tools: noteTools,
     onActivity,
     agentName: "Writer",
   });

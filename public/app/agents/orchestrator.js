@@ -1,21 +1,36 @@
-import { createSession, promptSession } from "./prompt-api.js";
-import {
-  parseToolCalls,
-  hasToolCalls,
-  formatToolResult,
-} from "./tool-call-parser.js";
+import { createSession, promptSessionConstrained } from "./prompt-api.js";
+import { formatToolResult } from "./tool-call-parser.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 
 const MAX_ITERATIONS = 3;
 
+const buildResponseSchema = (tools) => ({
+  type: "object",
+  properties: {
+    action: {
+      type: "string",
+      enum: ["tool_call", "final_answer"],
+    },
+    tool_name: {
+      type: "string",
+      enum: tools.map((t) => t.name),
+    },
+    tool_args: { type: "object" },
+    text: { type: "string" },
+  },
+  required: ["action"],
+});
+
 /**
- * Run an agent loop: prompt the model, parse tool calls, execute them,
- * feed results back, repeat until no more tool calls or max iterations.
+ * Run an agent loop: prompt the model with constrained decoding,
+ * parse the structured JSON response, execute tool calls,
+ * feed results back, repeat until final_answer or max iterations.
  */
 export const runAgentLoop = async ({
   systemPrompt,
   userMessage,
+  tools,
   onActivity,
   agentName,
 }) => {
@@ -34,6 +49,7 @@ export const runAgentLoop = async ({
   debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
 
   const session = await createSession(systemPrompt);
+  const responseConstraint = buildResponseSchema(tools);
   let currentMessage = userMessage;
   let lastResponse = "";
 
@@ -41,43 +57,55 @@ export const runAgentLoop = async ({
     emit("prompt", `Sending message (iteration ${i + 1})`);
     debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
 
+    let raw;
     try {
-      lastResponse = await promptSession(session, currentMessage);
+      raw = await promptSessionConstrained(
+        session,
+        currentMessage,
+        responseConstraint,
+      );
     } catch (err) {
       emit("error", `Prompt failed: ${err.message}`);
       session.destroy();
       throw err;
     }
 
+    debug(agentName, `=== RAW OUTPUT (iteration ${i + 1}) ===\n` + raw);
+
+    let response;
+    try {
+      response = JSON.parse(raw);
+    } catch (err) {
+      debug(agentName, "JSON.parse failed on constrained output:", err.message);
+      emit("error", `Invalid JSON from constrained decoding: ${err.message}`);
+      lastResponse = raw;
+      break;
+    }
+
     debug(
       agentName,
-      `=== FULL OUTPUT (iteration ${i + 1}) ===\n` + lastResponse,
+      `=== PARSED (iteration ${i + 1}) ===\n` +
+        JSON.stringify(response, null, 2),
     );
-    emit("response", lastResponse.slice(0, 200));
 
-    const hasTC = hasToolCalls(lastResponse);
-    debug(agentName, "hasToolCalls:", hasTC);
-
-    if (!hasTC) {
-      debug(agentName, "No <tool_call> tags found, ending loop");
+    if (response.action === "final_answer") {
+      lastResponse = response.text || "";
+      emit("response", lastResponse.slice(0, 200));
+      debug(agentName, "Final answer received, ending loop");
       break;
     }
 
-    const toolCalls = parseToolCalls(lastResponse);
-    debug(agentName, "Parsed tool calls:", JSON.stringify(toolCalls, null, 2));
-    if (toolCalls.length === 0) {
-      debug(agentName, "hasToolCalls=true but parsed 0, ending loop");
-      break;
-    }
-
-    const results = [];
-    for (const tc of toolCalls) {
+    if (response.action === "tool_call") {
+      const tc = { name: response.tool_name, args: response.tool_args || {} };
       emit("tool-call", { name: tc.name, args: tc.args });
+      emit("response", `Calling tool: ${tc.name}`);
       debug(
         agentName,
         `=== CALLING TOOL: ${tc.name} ===\nArgs:`,
         JSON.stringify(tc.args, null, 2),
       );
+
+      let resultMessage;
       try {
         const result = await callTool(tc.name, tc.args);
         const resultStr =
@@ -91,18 +119,19 @@ export const runAgentLoop = async ({
           name: tc.name,
           result: truncated.slice(0, 200),
         });
-        results.push(formatToolResult(tc.name, truncated));
+        resultMessage = formatToolResult(tc.name, truncated);
       } catch (err) {
         debug(agentName, `=== TOOL ERROR: ${tc.name} ===\n` + err.message);
         emit("tool-error", { name: tc.name, error: err.message });
-        results.push(formatToolResult(tc.name, { error: err.message }));
+        resultMessage = formatToolResult(tc.name, { error: err.message });
       }
-    }
 
-    currentMessage =
-      "Tool results:\n" +
-      results.join("\n") +
-      "\n\nContinue based on these results.";
+      currentMessage =
+        "Tool results:\n" +
+        resultMessage +
+        "\n\nContinue based on these results.";
+      lastResponse = response.text || "";
+    }
   }
 
   session.destroy();

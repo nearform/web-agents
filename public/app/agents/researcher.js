@@ -10,8 +10,10 @@ const getSystemPrompt = (
 ## Tools
 ${formatToolSchemas(tools)}
 
-To use a tool, output a tool_call block exactly like this:
-<tool_call>{"name": "tool_name", "args": {"param": "value"}}</tool_call>
+## Response Format
+You MUST respond with JSON containing an "action" field.
+- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
+- To give your final answer: {"action": "final_answer", "text": "your summary here"}
 
 ## Brand Rules
 - Always use "Nearform" (lowercase 'f'), never "NearForm".
@@ -21,14 +23,13 @@ To use a tool, output a tool_call block exactly like this:
 - You MUST call search_nearform_knowledge at least once. This is your primary task.
 - Search for relevant content based on the research query you receive.
 - You may make multiple searches with different queries to be thorough.
-- After receiving tool results, compile a research brief with:
+- After receiving tool results, respond with action "final_answer" containing a research brief with:
   - Post titles and their exact URLs (href) from the results
   - Key themes and relevant text excerpts
   - Dates when available
 - ONLY include URLs that appear in the tool results. Do NOT invent or guess URLs.
 - When citing Nearform URLs, they must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
-- Replace "/blog/" with "/insights/" in any URLs.
-- Do NOT use tool_call in your final summary — just provide plain text.`;
+- Replace "/blog/" with "/insights/" in any URLs.`;
 
 export const runResearcher = async ({ query, tools, onActivity }) => {
   const searchTools = tools.filter(
@@ -71,6 +72,7 @@ export const runResearcher = async ({ query, tools, onActivity }) => {
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
 
 User question: ${query}`,
+    tools: searchTools,
     onActivity,
     agentName: "Researcher",
   });
