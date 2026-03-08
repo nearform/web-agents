@@ -154,7 +154,7 @@ const halveToolResults = (message) => {
 export const runToolLoop = async (session, message, tools, options = {}) => {
   const {
     maxIterations = config.agents.maxIterations,
-    maxResultLength = 1200,
+    maxResultLength = config.agents.maxResultLength || 4000,
     emit = () => {},
     agentName = "agent",
     onContextUpdate,

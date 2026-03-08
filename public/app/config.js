@@ -8,6 +8,7 @@ export const config = {
   agents: {
     maxIterations: 3,
     maxSearchPosts: 5,
+    maxResultLength: 4000,
   },
   context: {
     warnPct: 80,
