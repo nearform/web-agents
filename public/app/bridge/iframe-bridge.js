@@ -1,7 +1,7 @@
 /* global document:false, console:false, setTimeout:false */
-import { IframeParentTransport } from "@anthropic-ai/mcp-bridge-transports";
-import { debug } from "../util/debug.js";
+import { IframeParentTransport } from "@mcp-b/transports";
 import { config } from "../config.js";
+import { debug } from "../util/debug.js";
 
 const IFRAME_SRC = `${config.vectorSearchOrigin}/public/`;
 
