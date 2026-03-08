@@ -161,7 +161,10 @@ export const runCoordinator = async ({
       }
     }
     reportStatus("Researcher", "done");
-    emit("received", `Research complete (${researchBrief.length} chars)`);
+    emit("received", {
+      summary: `Research complete (${researchBrief.length} chars)`,
+      result: researchBrief,
+    });
   } else {
     debug("Coordinator", "Existing notepad present — skipping research");
     emit("received", "Skipping research — using existing notepad content");
