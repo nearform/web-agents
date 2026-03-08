@@ -1,4 +1,4 @@
-import { formatToolSchemas } from "./tool-call-parser.js";
+import { formatToolSchemas } from "./tool-formatting.js";
 
 export const BRAND_RULES = `## Brand Rules
 - Always use "Nearform" (lowercase 'f'), never "NearForm".

@@ -1,4 +1,4 @@
-import { runAgentLoop } from "./orchestrator.js";
+import { runAgentLoop } from "./agent-loop.js";
 import { debug } from "../util/debug.js";
 import { getResearcherSystemPrompt } from "./prompts.js";
 

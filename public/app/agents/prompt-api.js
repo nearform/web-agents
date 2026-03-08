@@ -37,6 +37,40 @@ export const createSession = async (systemPrompt) => {
   return session;
 };
 
+/**
+ * Create a session that is aware of tools.
+ * When Chrome ships native tool support, tools are passed to LanguageModel.create()
+ * and session.prompt() handles the tool loop internally.
+ * Until then, behaves identically to createSession (tools are handled manually).
+ */
+export const createToolSession = async (systemPrompt, tools = []) => {
+  const opts = {
+    ...PROMPT_OPTIONS,
+    initialPrompts: [{ role: "system", content: systemPrompt }],
+  };
+  // When Chrome ships native tool support, this branch activates
+  if (hasNativeToolSupport() && tools.length > 0) {
+    opts.tools = tools;
+  }
+  debug(
+    "prompt-api",
+    "Creating tool session, system prompt length:",
+    systemPrompt.length,
+    "tools:",
+    tools.length,
+  );
+  const session = await LanguageModel.create(opts);
+  debug("prompt-api", "Tool session created, inputQuota:", session.inputQuota);
+  return session;
+};
+
+// Placeholder — will refine when the Prompt API tool-use spec ships.
+// Chrome exposes LanguageModel.prompt() today but does NOT yet accept a
+// `tools` option.  We detect native support by attempting to create a
+// session with a dummy tool — if Chrome throws, the feature isn't ready.
+// For now, hard-return false until the spec lands.
+const hasNativeToolSupport = () => false;
+
 export const promptSession = async (session, message) => {
   debug("prompt-api", "Prompting, message length:", message.length);
   const result = await session.prompt(message);

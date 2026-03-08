@@ -46,21 +46,34 @@ const getIcon = (type) => {
   }
 };
 
-const formatDetail = (detail) => {
+const formatDetail = (type, detail) => {
   if (typeof detail === "string") return detail;
-  if (detail?.name) {
+  if (type === "tool-call" && detail?.name) {
     return `${detail.name}(${detail.args ? JSON.stringify(detail.args) : ""})`;
+  }
+  if (type === "tool-result" && detail?.name) {
+    const preview =
+      typeof detail.result === "string"
+        ? detail.result
+        : JSON.stringify(detail.result);
+    return `${detail.name} → ${preview}`;
+  }
+  if (type === "tool-error" && detail?.name) {
+    return `${detail.name} ✗ ${detail.error || "unknown error"}`;
   }
   return JSON.stringify(detail);
 };
 
+const isToolEvent = (type) =>
+  type === "tool-call" || type === "tool-result" || type === "tool-error";
+
 const ActivityEntry = ({ entry, onClick }) => {
   const [expanded, setExpanded] = React.useState(false);
-  const isToolCall = entry.type === "tool-call";
-  const detailStr = formatDetail(entry.detail);
+  const expandable = isToolEvent(entry.type);
+  const detailStr = formatDetail(entry.type, entry.detail);
 
   const handleClick = () => {
-    if (isToolCall) setExpanded(!expanded);
+    if (expandable) setExpanded(!expanded);
     onClick(entry);
   };
 

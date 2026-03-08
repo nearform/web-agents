@@ -1,27 +1,7 @@
-import { createSession, promptSessionConstrained } from "./prompt-api.js";
-import { formatToolResult } from "./tool-call-parser.js";
-import { callTool } from "../bridge/tool-registry.js";
+import { promptSessionConstrained } from "./prompt-api.js";
+import { formatToolResult } from "./tool-formatting.js";
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
-import { createEmitter } from "../util/activity.js";
-
-/**
- * Slim down search results to reduce context size for the local model.
- * Keeps only the fields the agents need (title, href, date) and caps post count.
- */
-const slimToolResult = (result) => {
-  if (result && typeof result === "object" && Array.isArray(result.posts)) {
-    return {
-      postCount: Math.min(result.posts.length, config.agents.maxSearchPosts),
-      posts: result.posts.slice(0, config.agents.maxSearchPosts).map((p) => ({
-        title: p.title,
-        href: p.href,
-        date: p.date,
-      })),
-    };
-  }
-  return result;
-};
 
 /**
  * Attempt to repair JSON truncated by output token limits.
@@ -123,33 +103,30 @@ const buildResponseSchema = (tools) => ({
 });
 
 /**
- * Run an agent loop: prompt the model with constrained decoding,
- * parse the structured JSON response, execute tool calls,
- * feed results back, repeat until final_answer or max iterations.
+ * Manual tool-calling loop: constrained decoding → parse → execute → repeat.
+ *
+ * Future migration: when Chrome ships native tool support, the entire body
+ * becomes `return session.prompt(message)` (tools already on session).
  */
-export const runAgentLoop = async ({
-  systemPrompt,
-  userMessage,
-  tools,
-  onActivity,
-  agentName,
-}) => {
-  const emit = createEmitter(agentName, onActivity);
+export const runToolLoop = async (session, message, tools, options = {}) => {
+  const {
+    maxIterations = config.agents.maxIterations,
+    maxResultLength = 1200,
+    emit = () => {},
+    agentName = "agent",
+  } = options;
 
-  emit("start", `${agentName} starting`);
-  debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
-
-  const session = await createSession(systemPrompt);
   const responseConstraint = buildResponseSchema(tools);
   debug(
     agentName,
     "=== RESPONSE CONSTRAINT ===\n" +
       JSON.stringify(responseConstraint, null, 2),
   );
-  let currentMessage = userMessage;
+
+  let currentMessage = message;
   let lastResponse = "";
 
-  for (let i = 0; i < config.agents.maxIterations; i++) {
+  for (let i = 0; i < maxIterations; i++) {
     emit("prompt", `Sending message (iteration ${i + 1})`);
     debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
 
@@ -162,7 +139,6 @@ export const runAgentLoop = async ({
       );
     } catch (err) {
       emit("error", `Prompt failed: ${err.message}`);
-      session.destroy();
       throw err;
     }
 
@@ -211,15 +187,25 @@ export const runAgentLoop = async ({
         JSON.stringify(tc.args, null, 2),
       );
 
+      // Find the executable tool by name
+      const tool = tools.find((t) => t.name === tc.name);
+      if (!tool) {
+        const errMsg = `Unknown tool: ${tc.name}`;
+        debug(agentName, `=== TOOL ERROR: ${tc.name} ===\n` + errMsg);
+        emit("tool-error", { name: tc.name, error: errMsg });
+        currentMessage =
+          "Tool results:\n" +
+          formatToolResult(tc.name, { error: errMsg }) +
+          "\n\nContinue based on these results.";
+        continue;
+      }
+
       let resultMessage;
       try {
-        const rawResult = await callTool(tc.name, tc.args);
-        const result = slimToolResult(rawResult);
-        const resultStr =
-          typeof result === "string" ? result : JSON.stringify(result);
+        const resultStr = await tool.execute(tc.args);
         const truncated =
-          resultStr.length > 1200
-            ? resultStr.slice(0, 1200) + "...[truncated]"
+          resultStr.length > maxResultLength
+            ? resultStr.slice(0, maxResultLength) + "...[truncated]"
             : resultStr;
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + truncated);
         emit("tool-result", {
@@ -241,7 +227,5 @@ export const runAgentLoop = async ({
     }
   }
 
-  session.destroy();
-  emit("done", `${agentName} finished`);
   return lastResponse;
 };
