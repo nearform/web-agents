@@ -2,32 +2,34 @@ import {
   promptSessionConstrainedWithRetry,
   checkContextBudget,
   getContextInfo,
+  tokensToChars,
 } from "./prompt-api.js";
 import { formatToolResult } from "./tool-formatting.js";
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
 
 /**
- * Trim a tool result string to fit within maxLen without cutting mid-value.
+ * Trim a tool result string to fit within maxTokens without cutting mid-value.
  * If the result is JSON with a posts array, drop posts from the end instead
  * of slicing the string (which would break URLs and fields).
  */
-const trimResult = (str, maxLen) => {
-  if (str.length <= maxLen) return str;
+const trimResult = (str, maxTokens) => {
+  const maxChars = tokensToChars(maxTokens);
+  if (str.length <= maxChars) return str;
   try {
     const obj = JSON.parse(str);
     if (obj && Array.isArray(obj.posts)) {
       while (obj.posts.length > 1) {
         obj.posts.pop();
         const attempt = JSON.stringify(obj);
-        if (attempt.length <= maxLen) return attempt;
+        if (attempt.length <= maxChars) return attempt;
       }
       return JSON.stringify(obj);
     }
   } catch {
     // not JSON — fall through
   }
-  return str.slice(0, maxLen) + "...[truncated]";
+  return str.slice(0, maxChars) + "...[truncated]";
 };
 
 /**
@@ -154,13 +156,13 @@ const halveToolResults = (message) => {
 export const runToolLoop = async (session, message, tools, options = {}) => {
   const {
     maxIterations = config.agents.maxIterations,
-    maxResultLength = config.agents.maxResultLength || 4000,
+    maxResultTokens = config.agents.maxResultTokens || 1000,
     emit = () => {},
     agentName = "agent",
     onContextUpdate,
   } = options;
 
-  let effectiveMaxResultLength = maxResultLength;
+  let effectiveMaxResultTokens = maxResultTokens;
   const responseConstraint = buildResponseSchema(tools);
   debug(
     agentName,
@@ -174,13 +176,29 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
   for (let i = 0; i < maxIterations; i++) {
     // Check context budget before prompting
     const budget = checkContextBudget(session, currentMessage);
+
+    // Dynamic token budget based on available context
+    const reserve = config.context.resultTokenReserve || 100;
+    if (budget.available != null) {
+      const dynamicBudget = Math.floor(budget.available * 0.5) - reserve;
+      effectiveMaxResultTokens = Math.max(
+        200,
+        Math.min(maxResultTokens, dynamicBudget),
+      );
+    }
+
     if (budget.pct != null && budget.pct >= config.context.criticalPct) {
       debug.warn(
         agentName,
-        `Context critical (${budget.pct}%), reducing maxResultLength`,
+        `Context critical (${budget.pct}%), halving result token budget`,
       );
-      effectiveMaxResultLength = Math.floor(effectiveMaxResultLength * 0.5);
+      effectiveMaxResultTokens = Math.floor(effectiveMaxResultTokens * 0.5);
     }
+
+    debug(
+      agentName,
+      `Result token budget: ${effectiveMaxResultTokens} (available: ${budget.available}, cap: ${maxResultTokens})`,
+    );
 
     emit("prompt", {
       summary: `Sending message (iteration ${i + 1})`,
@@ -270,7 +288,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       let resultMessage;
       try {
         const resultStr = await tool.execute(tc.args);
-        const trimmed = trimResult(resultStr, effectiveMaxResultLength);
+        const trimmed = trimResult(resultStr, effectiveMaxResultTokens);
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + trimmed);
         emit("tool-result", {
           name: tc.name,

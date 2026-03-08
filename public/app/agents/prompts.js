@@ -28,12 +28,19 @@ Category mapping tips:
 
 When the topic clearly matches one or more categories, include categoryPrimary with ALL relevant categories (it's an array — use multiple). Only omit categoryPrimary for very broad or cross-cutting queries where filtering would miss results.`;
 
-export const POST_TYPE_GUIDANCE = `## Post Type Filtering — CRITICAL
-The postType parameter filters by content type: "blog" (articles/insights) or "work" (client case studies).
-- DEFAULT: Omit postType entirely. Almost all queries should NOT have a postType filter.
-- The ONLY time to use postType: ["work"] is when the user literally says "case studies" or "client projects".
-- Queries about expertise, experience, capabilities, technology, services, etc. must NEVER use postType. These are answered by blog posts AND case studies together.
-- When in doubt, OMIT postType. Filtering incorrectly will return zero results.`;
+export const POST_TYPE_GUIDANCE = `## Post Type Filtering — ABSOLUTE RULE
+The postType parameter filters by content type: "blog" (articles) or "work" (client case studies).
+
+⚠️ NEVER include postType in your tool_args. Omit it completely from every search call.
+The ONLY exception: the user literally writes the phrase "case studies" or "client projects".
+
+WRONG (do NOT do this):
+  {"action":"tool_call","tool_name":"search_nearform_knowledge","tool_args":{"query":"AI","postType":["work"]}}
+CORRECT:
+  {"action":"tool_call","tool_name":"search_nearform_knowledge","tool_args":{"query":"AI"}}
+
+Even for queries about expertise, experience, capabilities, services — NEVER add postType.
+Adding postType when it's not needed returns zero results and wastes a search iteration.`;
 
 export const AINE_GUIDANCE = `## Topic Guidance: AI-Native Engineering
 When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:

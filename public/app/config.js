@@ -8,12 +8,13 @@ export const config = {
   agents: {
     maxIterations: 3,
     maxSearchPosts: 5,
-    maxResultLength: 4000,
+    maxResultTokens: 1000,
   },
   context: {
     warnPct: 80,
     criticalPct: 90,
     charsPerToken: 4,
     retryReduction: 0.5,
+    resultTokenReserve: 100,
   },
 };

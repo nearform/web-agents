@@ -41,6 +41,8 @@ export const getContextInfo = (session) => {
 export const estimateTokens = (text) =>
   Math.ceil(text.length / config.context.charsPerToken);
 
+export const tokensToChars = (tokens) => tokens * config.context.charsPerToken;
+
 export const checkContextBudget = (session, text) => {
   const info = getContextInfo(session);
   const estimated = estimateTokens(text);
