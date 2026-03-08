@@ -1,4 +1,8 @@
-import { createSession, promptSessionStreaming } from "./prompt-api.js";
+import {
+  createSession,
+  promptSessionStreaming,
+  getContextInfo,
+} from "./prompt-api.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 import { createEmitter } from "../util/activity.js";
@@ -36,18 +40,27 @@ export const runWriter = async ({
   onAgentStatus,
 }) => {
   const emit = createEmitter("Writer", onActivity);
-  const reportStatus = (status, contextPct) => {
-    if (onAgentStatus) onAgentStatus("Writer", status, contextPct);
+  const reportContext = () => {
+    if (!onAgentStatus) return;
+    const info = getContextInfo(session);
+    if (info) onAgentStatus("Writer", "active", info);
+  };
+  const reportStatus = (status) => {
+    if (!onAgentStatus) return;
+    const info = getContextInfo(session);
+    onAgentStatus("Writer", status, info);
   };
 
   emit("start", "Writer starting");
-  reportStatus("active");
 
   const session = await createSession(WRITER_SYSTEM_PROMPT);
+  reportStatus("active");
 
   const tryStreaming = async (prompt, onChunk, label) => {
     try {
-      return await promptSessionStreaming(session, prompt, onChunk);
+      const result = await promptSessionStreaming(session, prompt, onChunk);
+      reportContext();
+      return result;
     } catch (err) {
       if (!err.message.includes("timed out")) throw err;
       debug.warn("Writer", `${label} timed out, retrying with truncated input`);

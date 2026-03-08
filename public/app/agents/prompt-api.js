@@ -27,8 +27,10 @@ export const checkAvailability = async () => {
 
 export const getContextInfo = (session) => {
   try {
-    const used = session.contextUsage?.used ?? null;
-    const total = session.contextWindow?.total ?? null;
+    // New API: session.contextUsage / session.contextWindow (direct numbers)
+    // Old API fallback: session.inputUsage / session.inputQuota
+    const used = session.contextUsage ?? session.inputUsage ?? null;
+    const total = session.contextWindow ?? session.inputQuota ?? null;
     if (used == null || total == null) return null;
     return { used, total, pct: Math.round((used / total) * 100) };
   } catch {
@@ -71,9 +73,9 @@ const logContextAfterPrompt = (session, label) => {
     `Context after ${label}: ${info.pct}% (${info.used}/${info.total})`,
   );
   if (info.pct >= config.context.criticalPct) {
-    debug.warn("prompt-api", `Context CRITICAL after ${label}: ${info.pct}%`);
+    debug.warn("prompt-api", `Context CRITICAL after ${label}: ${info.pct}% (${info.used}/${info.total})`);
   } else if (info.pct >= config.context.warnPct) {
-    debug.warn("prompt-api", `Context WARNING after ${label}: ${info.pct}%`);
+    debug.warn("prompt-api", `Context WARNING after ${label}: ${info.pct}% (${info.used}/${info.total})`);
   }
 };
 

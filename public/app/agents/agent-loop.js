@@ -46,6 +46,7 @@ export const runAgentLoop = async ({
   tools,
   onActivity,
   agentName,
+  onContextUpdate,
 }) => {
   const emit = createEmitter(agentName, onActivity);
 
@@ -61,6 +62,7 @@ export const runAgentLoop = async ({
     const result = await runToolLoop(session, userMessage, executableTools, {
       emit,
       agentName,
+      onContextUpdate,
     });
     emit("done", `${agentName} finished`);
     return result;

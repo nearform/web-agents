@@ -1,7 +1,11 @@
 import { runResearcher } from "./researcher.js";
 import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
-import { createSession, promptSessionConstrained } from "./prompt-api.js";
+import {
+  createSession,
+  promptSessionConstrained,
+  getContextInfo,
+} from "./prompt-api.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
 import { TRIAGE_SYSTEM_PROMPT } from "./prompts.js";
@@ -42,8 +46,9 @@ async function triageFollowUp(userMessage, existingNotepad, chatHistory) {
       `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`,
       TRIAGE_SCHEMA,
     );
+    const contextInfo = getContextInfo(session);
     const parsed = JSON.parse(raw);
-    return parsed.needs_research === true;
+    return { needsResearch: parsed.needs_research === true, contextInfo };
   } finally {
     session.destroy();
   }
@@ -69,8 +74,8 @@ export const runCoordinator = async ({
   onAgentStatus,
 }) => {
   const emit = createEmitter("Coordinator", onActivity);
-  const reportStatus = (agentName, status, contextPct) => {
-    if (onAgentStatus) onAgentStatus(agentName, status, contextPct);
+  const reportStatus = (agentName, status, contextInfo) => {
+    if (onAgentStatus) onAgentStatus(agentName, status, contextInfo);
   };
 
   emit("start", "Analyzing your request...");
@@ -80,11 +85,13 @@ export const runCoordinator = async ({
   let needsResearch = !existingNotepad;
   if (!needsResearch) {
     try {
-      needsResearch = await triageFollowUp(
+      const triage = await triageFollowUp(
         userMessage,
         existingNotepad,
         chatHistory,
       );
+      needsResearch = triage.needsResearch;
+      reportStatus("Coordinator", "active", triage.contextInfo);
       debug("Coordinator", `Triage result: needsResearch=${needsResearch}`);
     } catch (err) {
       debug("Coordinator", `Triage failed, skipping research: ${err.message}`);
@@ -101,6 +108,7 @@ export const runCoordinator = async ({
         tools,
         onActivity,
         existingContext: existingNotepad,
+        onContextUpdate: (info) => reportStatus("Researcher", "active", info),
       });
     } catch (err) {
       if (err.message.includes("timed out") && existingNotepad) {
@@ -115,6 +123,7 @@ export const runCoordinator = async ({
             tools,
             onActivity,
             existingContext: truncateHalf(existingNotepad),
+            onContextUpdate: (info) => reportStatus("Researcher", "active", info),
           });
         } catch (retryErr) {
           reportStatus("Researcher", "error");
@@ -140,6 +149,7 @@ export const runCoordinator = async ({
           tools,
           onActivity,
           existingContext: existingNotepad,
+          onContextUpdate: (info) => reportStatus("Researcher", "active", info),
         });
       } catch (err) {
         emit("error", `Retry research failed: ${err.message}`);

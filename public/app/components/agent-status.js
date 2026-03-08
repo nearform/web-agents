@@ -24,7 +24,7 @@ const AgentDetailModal = ({ agent, status, onClose }) => {
         </div>
         <div className="activity-modal-body">
           ${status.contextPct != null
-            ? `Context usage: ${status.contextPct}%\nStatus: ${status.status}`
+            ? `Context: ${status.contextUsed} / ${status.contextTotal} tokens (${status.contextPct}%)\nAvailable: ${status.contextTotal - status.contextUsed} tokens\nStatus: ${status.status}`
             : `Status: ${status.status}\nNo context data available`}
         </div>
       </div>
@@ -55,8 +55,7 @@ export const AgentStatus = ({ statuses }) => {
               }}
             ></span>
             <span className="tool-status-name">${name}</span>
-            ${s.status === "active" &&
-            s.contextPct != null &&
+            ${s.contextPct != null &&
             html`<span className="agent-context-badge">${s.contextPct}%</span>`}
           </span>
         `;

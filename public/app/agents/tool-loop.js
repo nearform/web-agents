@@ -1,6 +1,7 @@
 import {
   promptSessionConstrainedWithRetry,
   checkContextBudget,
+  getContextInfo,
 } from "./prompt-api.js";
 import { formatToolResult } from "./tool-formatting.js";
 import { debug } from "../util/debug.js";
@@ -156,6 +157,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     maxResultLength = 1200,
     emit = () => {},
     agentName = "agent",
+    onContextUpdate,
   } = options;
 
   let effectiveMaxResultLength = maxResultLength;
@@ -191,6 +193,11 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
         responseConstraint,
         halveToolResults,
       );
+      // Report context after successful prompt
+      if (onContextUpdate) {
+        const info = getContextInfo(session);
+        if (info) onContextUpdate(info);
+      }
     } catch (err) {
       if (err.message.includes("timed out")) {
         emit("retry", `Prompt timed out, retried with shorter context`);

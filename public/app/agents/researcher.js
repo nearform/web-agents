@@ -7,6 +7,7 @@ export const runResearcher = async ({
   tools,
   onActivity,
   existingContext,
+  onContextUpdate,
 }) => {
   const searchTools = tools.filter(
     (t) => t.name === "search_nearform_knowledge",
@@ -53,6 +54,7 @@ User question: ${query}`,
     tools: searchTools,
     onActivity,
     agentName: "Researcher",
+    onContextUpdate,
   });
 
   // Check if the tool was actually called by looking at activity
