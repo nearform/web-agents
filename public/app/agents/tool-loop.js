@@ -1,7 +1,33 @@
-import { promptSessionConstrained } from "./prompt-api.js";
+import {
+  promptSessionConstrainedWithRetry,
+  checkContextBudget,
+} from "./prompt-api.js";
 import { formatToolResult } from "./tool-formatting.js";
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
+
+/**
+ * Trim a tool result string to fit within maxLen without cutting mid-value.
+ * If the result is JSON with a posts array, drop posts from the end instead
+ * of slicing the string (which would break URLs and fields).
+ */
+const trimResult = (str, maxLen) => {
+  if (str.length <= maxLen) return str;
+  try {
+    const obj = JSON.parse(str);
+    if (obj && Array.isArray(obj.posts)) {
+      while (obj.posts.length > 1) {
+        obj.posts.pop();
+        const attempt = JSON.stringify(obj);
+        if (attempt.length <= maxLen) return attempt;
+      }
+      return JSON.stringify(obj);
+    }
+  } catch {
+    // not JSON — fall through
+  }
+  return str.slice(0, maxLen) + "...[truncated]";
+};
 
 /**
  * Attempt to repair JSON truncated by output token limits.
@@ -102,6 +128,22 @@ const buildResponseSchema = (tools) => ({
   required: ["action"],
 });
 
+/** Halve tool result content in a message string for retry. */
+const halveToolResults = (message) => {
+  // Find "Tool results:\n" blocks and halve them
+  return message.replace(
+    /(Tool results:\n)([\s\S]*?)(\n\n)/g,
+    (_, prefix, content, suffix) =>
+      prefix +
+      content.slice(
+        0,
+        Math.ceil(content.length * config.context.retryReduction),
+      ) +
+      "...[truncated for retry]" +
+      suffix,
+  );
+};
+
 /**
  * Manual tool-calling loop: constrained decoding → parse → execute → repeat.
  *
@@ -116,6 +158,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     agentName = "agent",
   } = options;
 
+  let effectiveMaxResultLength = maxResultLength;
   const responseConstraint = buildResponseSchema(tools);
   debug(
     agentName,
@@ -127,17 +170,31 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
   let lastResponse = "";
 
   for (let i = 0; i < maxIterations; i++) {
+    // Check context budget before prompting
+    const budget = checkContextBudget(session, currentMessage);
+    if (budget.pct != null && budget.pct >= config.context.criticalPct) {
+      debug.warn(
+        agentName,
+        `Context critical (${budget.pct}%), reducing maxResultLength`,
+      );
+      effectiveMaxResultLength = Math.floor(effectiveMaxResultLength * 0.5);
+    }
+
     emit("prompt", `Sending message (iteration ${i + 1})`);
     debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
 
     let raw;
     try {
-      raw = await promptSessionConstrained(
+      raw = await promptSessionConstrainedWithRetry(
         session,
         currentMessage,
         responseConstraint,
+        halveToolResults,
       );
     } catch (err) {
+      if (err.message.includes("timed out")) {
+        emit("retry", `Prompt timed out, retried with shorter context`);
+      }
       emit("error", `Prompt failed: ${err.message}`);
       throw err;
     }
@@ -203,16 +260,13 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       let resultMessage;
       try {
         const resultStr = await tool.execute(tc.args);
-        const truncated =
-          resultStr.length > maxResultLength
-            ? resultStr.slice(0, maxResultLength) + "...[truncated]"
-            : resultStr;
-        debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + truncated);
+        const trimmed = trimResult(resultStr, effectiveMaxResultLength);
+        debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + trimmed);
         emit("tool-result", {
           name: tc.name,
           result: resultStr,
         });
-        resultMessage = formatToolResult(tc.name, truncated);
+        resultMessage = formatToolResult(tc.name, trimmed);
       } catch (err) {
         debug(agentName, `=== TOOL ERROR: ${tc.name} ===\n` + err.message);
         emit("tool-error", { name: tc.name, error: err.message });
@@ -222,7 +276,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       currentMessage =
         "Tool results:\n" +
         resultMessage +
-        "\n\nContinue based on these results.";
+        "\n\nUse ONLY the data above. Copy URLs exactly as shown — do not modify, complete, or invent any URL. If any value looks truncated, omit it. Continue based on these results.";
       lastResponse = response.text || "";
     }
   }

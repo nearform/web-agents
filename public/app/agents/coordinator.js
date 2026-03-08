@@ -3,6 +3,7 @@ import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
 import { createSession, promptSessionConstrained } from "./prompt-api.js";
 import { createEmitter } from "../util/activity.js";
+import { config } from "../config.js";
 import { TRIAGE_SYSTEM_PROMPT } from "./prompts.js";
 
 const TRIAGE_SCHEMA = {
@@ -13,12 +14,32 @@ const TRIAGE_SCHEMA = {
   required: ["needs_research"],
 };
 
-async function triageFollowUp(userMessage, existingNotepad) {
+const formatChatHistory = (chatHistory, maxPairs = 3) => {
+  if (!chatHistory || chatHistory.length === 0) return "";
+  const recent = chatHistory.slice(-maxPairs * 2);
+  return recent
+    .map(
+      (m) =>
+        `${m.role === "user" ? "User" : "Assistant"}: ${m.text.slice(0, 200)}`,
+    )
+    .join("\n");
+};
+
+const truncateHalf = (text) => {
+  if (!text) return text;
+  return (
+    text.slice(0, Math.ceil(text.length * config.context.retryReduction)) +
+    "\n...[truncated for retry]"
+  );
+};
+
+async function triageFollowUp(userMessage, existingNotepad, chatHistory) {
   const session = await createSession(TRIAGE_SYSTEM_PROMPT);
   try {
+    const history = formatChatHistory(chatHistory);
     const raw = await promptSessionConstrained(
       session,
-      `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"\n\nUser follow-up: "${userMessage}"`,
+      `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`,
       TRIAGE_SCHEMA,
     );
     const parsed = JSON.parse(raw);
@@ -42,18 +63,28 @@ export const runCoordinator = async ({
   tools,
   onActivity,
   existingNotepad,
+  chatHistory,
   onStreamChunk,
   onNotepadStreamChunk,
+  onAgentStatus,
 }) => {
   const emit = createEmitter("Coordinator", onActivity);
+  const reportStatus = (agentName, status, contextPct) => {
+    if (onAgentStatus) onAgentStatus(agentName, status, contextPct);
+  };
 
   emit("start", "Analyzing your request...");
+  reportStatus("Coordinator", "active");
 
   let researchBrief = null;
   let needsResearch = !existingNotepad;
   if (!needsResearch) {
     try {
-      needsResearch = await triageFollowUp(userMessage, existingNotepad);
+      needsResearch = await triageFollowUp(
+        userMessage,
+        existingNotepad,
+        chatHistory,
+      );
       debug("Coordinator", `Triage result: needsResearch=${needsResearch}`);
     } catch (err) {
       debug("Coordinator", `Triage failed, skipping research: ${err.message}`);
@@ -63,6 +94,7 @@ export const runCoordinator = async ({
   if (needsResearch) {
     // No existing notepad — run the full research pipeline
     emit("delegate", "Handing off to Researcher agent");
+    reportStatus("Researcher", "active");
     try {
       researchBrief = await runResearcher({
         query: userMessage,
@@ -71,8 +103,29 @@ export const runCoordinator = async ({
         existingContext: existingNotepad,
       });
     } catch (err) {
-      emit("error", `Research failed: ${err.message}`);
-      return `I wasn't able to complete the research. Error: ${err.message}`;
+      if (err.message.includes("timed out") && existingNotepad) {
+        debug.warn(
+          "Coordinator",
+          "Researcher timed out, retrying with truncated context",
+        );
+        emit("retry", "Researcher timed out — retrying with shorter context");
+        try {
+          researchBrief = await runResearcher({
+            query: userMessage,
+            tools,
+            onActivity,
+            existingContext: truncateHalf(existingNotepad),
+          });
+        } catch (retryErr) {
+          reportStatus("Researcher", "error");
+          emit("error", `Research retry failed: ${retryErr.message}`);
+          return `I wasn't able to complete the research. Error: ${retryErr.message}`;
+        }
+      } else {
+        reportStatus("Researcher", "error");
+        emit("error", `Research failed: ${err.message}`);
+        return `I wasn't able to complete the research. Error: ${err.message}`;
+      }
     }
     // Retry without filters if research came back empty
     if (
@@ -92,6 +145,7 @@ export const runCoordinator = async ({
         emit("error", `Retry research failed: ${err.message}`);
       }
     }
+    reportStatus("Researcher", "done");
     emit("received", `Research complete (${researchBrief.length} chars)`);
   } else {
     debug("Coordinator", "Existing notepad present — skipping research");
@@ -109,19 +163,54 @@ export const runCoordinator = async ({
       tools,
       onActivity,
       existingNotepad,
+      chatHistory,
       skipNotepadWrite,
       onStreamChunk,
       onNotepadStreamChunk,
+      onAgentStatus: reportStatus,
     });
   } catch (err) {
-    emit("error", `Writing failed: ${err.message}`);
-    if (researchBrief) {
-      return `Research was completed but writing failed. Here's what was found:\n\n${researchBrief}`;
+    if (err.message.includes("timed out")) {
+      debug.warn(
+        "Coordinator",
+        "Writer timed out, retrying with truncated inputs",
+      );
+      emit("retry", "Writer timed out — retrying with shorter context");
+      try {
+        writerAnswer = await runWriter({
+          researchBrief: truncateHalf(researchBrief || ""),
+          originalQuery: userMessage,
+          tools,
+          onActivity,
+          existingNotepad: existingNotepad
+            ? truncateHalf(existingNotepad)
+            : undefined,
+          chatHistory: chatHistory ? chatHistory.slice(-2) : chatHistory,
+          skipNotepadWrite,
+          onStreamChunk,
+          onNotepadStreamChunk,
+          onAgentStatus: reportStatus,
+        });
+      } catch (retryErr) {
+        reportStatus("Writer", "error");
+        emit("error", `Writer retry failed: ${retryErr.message}`);
+        if (researchBrief) {
+          return `Research was completed but writing failed. Here's what was found:\n\n${researchBrief}`;
+        }
+        return `Writing failed: ${retryErr.message}`;
+      }
+    } else {
+      reportStatus("Writer", "error");
+      emit("error", `Writing failed: ${err.message}`);
+      if (researchBrief) {
+        return `Research was completed but writing failed. Here's what was found:\n\n${researchBrief}`;
+      }
+      return `Writing failed: ${err.message}`;
     }
-    return `Writing failed: ${err.message}`;
   }
 
   emit("received", "Writing complete");
+  reportStatus("Coordinator", "done");
   emit("done", "All agents finished");
 
   return (

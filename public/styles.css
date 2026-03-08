@@ -598,7 +598,6 @@ body {
   background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  margin-top: 16px;
   flex-shrink: 0;
   font-size: 0.8rem;
   flex-wrap: wrap;
@@ -651,6 +650,84 @@ body {
 .tool-status-none {
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+/* Status Bars Container */
+.status-bars {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-top: 16px;
+  flex-shrink: 0;
+}
+
+.status-bars > * {
+  flex: 1;
+  margin-top: 0;
+}
+
+/* Agent Status Bar */
+.agent-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.agent-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-border);
+}
+
+.agent-status-dot.idle {
+  background: var(--color-border);
+}
+
+.agent-status-dot.active {
+  background: var(--agent-color);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--agent-color) 50%, transparent);
+  animation: agent-pulse 1.5s ease-in-out infinite;
+}
+
+.agent-status-dot.done {
+  background: var(--agent-color);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--agent-color) 50%, transparent);
+}
+
+.agent-status-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes agent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.agent-context-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Footer */

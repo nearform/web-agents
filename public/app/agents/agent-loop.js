@@ -7,20 +7,32 @@ import { createEmitter } from "../util/activity.js";
 
 /**
  * Slim down search results to reduce context size for the local model.
- * Keeps only the fields the agents need (title, href, date) and caps post count.
+ * Keeps top posts with article excerpts from matching chunks.
  */
 const slimToolResult = (result) => {
-  if (result && typeof result === "object" && Array.isArray(result.posts)) {
-    return {
-      postCount: Math.min(result.posts.length, config.agents.maxSearchPosts),
-      posts: result.posts.slice(0, config.agents.maxSearchPosts).map((p) => ({
+  if (!result || typeof result !== "object" || !Array.isArray(result.posts)) {
+    return result;
+  }
+  const maxPosts = config.agents.maxSearchPosts;
+  const posts = result.posts.slice(0, maxPosts);
+  const chunkMap = new Map();
+  if (Array.isArray(result.chunks)) {
+    for (const c of result.chunks) {
+      chunkMap.set(c.slug, c.text);
+    }
+  }
+  return {
+    postCount: Math.min(result.posts.length, maxPosts),
+    posts: posts.map((p) => {
+      const text = chunkMap.get(p.slug) || "";
+      return {
         title: p.title,
         href: p.href,
         date: p.date,
-      })),
-    };
-  }
-  return result;
+        excerpt: text.slice(0, 400),
+      };
+    }),
+  };
 };
 
 /**

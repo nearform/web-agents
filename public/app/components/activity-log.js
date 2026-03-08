@@ -65,11 +65,14 @@ const formatDetail = (type, detail) => {
   return JSON.stringify(detail);
 };
 
-const isToolEvent = (type) =>
-  type === "tool-call" || type === "tool-result" || type === "tool-error";
+const isExpandable = (entry) => {
+  if (typeof entry.detail === "object" && entry.detail !== null) return true;
+  const str = formatDetail(entry.type, entry.detail);
+  return str.length > 120;
+};
 
 const ActivityEntry = ({ entry, onClick }) => {
-  const expandable = isToolEvent(entry.type);
+  const expandable = isExpandable(entry);
   const detailStr = formatDetail(entry.type, entry.detail);
 
   return html`
@@ -93,7 +96,18 @@ const formatDetailRaw = (detail) => {
   if (detail == null) return "";
   if (typeof detail === "string") return detail;
   try {
-    return JSON.stringify(detail, null, 2);
+    const display = { ...detail };
+    for (const [key, val] of Object.entries(display)) {
+      if (
+        typeof val === "string" &&
+        (val.startsWith("{") || val.startsWith("["))
+      ) {
+        try {
+          display[key] = JSON.parse(val);
+        } catch {} // eslint-disable-line no-empty
+      }
+    }
+    return JSON.stringify(display, null, 2);
   } catch {
     return String(detail);
   }

@@ -4,11 +4,18 @@ import { ChatPanel } from "./components/chat-panel.js";
 import { ActivityLog } from "./components/activity-log.js";
 import { NotepadPanel } from "./components/notepad-panel.js";
 import { ToolStatus } from "./components/tool-status.js";
+import { AgentStatus } from "./components/agent-status.js";
 import { initRegistry, listTools } from "./bridge/tool-registry.js";
 import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
+
+const INITIAL_AGENT_STATUSES = {
+  Coordinator: { status: "idle", contextPct: null },
+  Researcher: { status: "idle", contextPct: null },
+  Writer: { status: "idle", contextPct: null },
+};
 
 export const App = () => {
   const [messages, setMessages] = React.useState([]);
@@ -18,6 +25,9 @@ export const App = () => {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [streamingText, setStreamingText] = React.useState(null);
   const [status, setStatus] = React.useState("Initializing...");
+  const [agentStatuses, setAgentStatuses] = React.useState(
+    INITIAL_AGENT_STATUSES,
+  );
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
@@ -48,10 +58,24 @@ export const App = () => {
     setActivities((prev) => [...prev, event]);
   }, []);
 
+  const onAgentStatus = React.useCallback(
+    (agentName, statusValue, contextPct) => {
+      setAgentStatuses((prev) => ({
+        ...prev,
+        [agentName]: {
+          status: statusValue,
+          contextPct: contextPct ?? prev[agentName]?.contextPct ?? null,
+        },
+      }));
+    },
+    [],
+  );
+
   const executeCoordinator = React.useCallback(
-    async (text, existingNotepad) => {
+    async (text, existingNotepad, chatHistory) => {
       setIsProcessing(true);
       setStreamingText(null);
+      setAgentStatuses(INITIAL_AGENT_STATUSES);
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -59,8 +83,10 @@ export const App = () => {
           tools: currentTools,
           onActivity,
           existingNotepad,
+          chatHistory,
           onStreamChunk: (chunk) => setStreamingText(chunk),
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
+          onAgentStatus,
         });
 
         setStreamingText(null);
@@ -79,13 +105,13 @@ export const App = () => {
         setTools(listTools());
       }
     },
-    [onActivity],
+    [onActivity, onAgentStatus],
   );
 
   const handleSend = React.useCallback(
     (text) => {
       setMessages((prev) => [...prev, { role: "user", text }]);
-      executeCoordinator(text, notepadContent || undefined);
+      executeCoordinator(text, notepadContent || undefined, messages);
     },
     [notepadContent, executeCoordinator],
   );
@@ -94,6 +120,7 @@ export const App = () => {
     setMessages([]);
     setActivities([]);
     setNotepadContent("");
+    setAgentStatuses(INITIAL_AGENT_STATUSES);
     updateNotepad("");
   }, []);
 
@@ -144,7 +171,10 @@ export const App = () => {
         />
       </div>
 
-      <${ToolStatus} tools=${tools} />
+      <div className="status-bars">
+        <${AgentStatus} statuses=${agentStatuses} />
+        <${ToolStatus} tools=${tools} />
+      </div>
 
       <footer className="footer">
         <a

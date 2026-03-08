@@ -23,6 +23,62 @@ export const checkAvailability = async () => {
   }
 };
 
+/* ── Context tracking ────────────────────────────────────────── */
+
+export const getContextInfo = (session) => {
+  try {
+    const used = session.contextUsage?.used ?? null;
+    const total = session.contextWindow?.total ?? null;
+    if (used == null || total == null) return null;
+    return { used, total, pct: Math.round((used / total) * 100) };
+  } catch {
+    return null;
+  }
+};
+
+export const estimateTokens = (text) =>
+  Math.ceil(text.length / config.context.charsPerToken);
+
+export const checkContextBudget = (session, text) => {
+  const info = getContextInfo(session);
+  const estimated = estimateTokens(text);
+  if (!info) return { fits: true, estimated, available: null, pct: null };
+
+  const available = info.total - info.used;
+  const pct = info.pct;
+
+  if (pct >= config.context.criticalPct) {
+    debug.warn(
+      "prompt-api",
+      `Context CRITICAL: ${pct}% used (${info.used}/${info.total}), ` +
+        `estimated next prompt: ${estimated} tokens`,
+    );
+  } else if (pct >= config.context.warnPct) {
+    debug.warn(
+      "prompt-api",
+      `Context WARNING: ${pct}% used (${info.used}/${info.total})`,
+    );
+  }
+
+  return { fits: estimated <= available, estimated, available, pct };
+};
+
+const logContextAfterPrompt = (session, label) => {
+  const info = getContextInfo(session);
+  if (!info) return;
+  debug(
+    "prompt-api",
+    `Context after ${label}: ${info.pct}% (${info.used}/${info.total})`,
+  );
+  if (info.pct >= config.context.criticalPct) {
+    debug.warn("prompt-api", `Context CRITICAL after ${label}: ${info.pct}%`);
+  } else if (info.pct >= config.context.warnPct) {
+    debug.warn("prompt-api", `Context WARNING after ${label}: ${info.pct}%`);
+  }
+};
+
+/* ── Session creation ────────────────────────────────────────── */
+
 export const createSession = async (systemPrompt) => {
   debug(
     "prompt-api",
@@ -65,18 +121,9 @@ export const createToolSession = async (systemPrompt, tools = []) => {
 };
 
 // Placeholder — will refine when the Prompt API tool-use spec ships.
-// Chrome exposes LanguageModel.prompt() today but does NOT yet accept a
-// `tools` option.  We detect native support by attempting to create a
-// session with a dummy tool — if Chrome throws, the feature isn't ready.
-// For now, hard-return false until the spec lands.
 const hasNativeToolSupport = () => false;
 
-export const promptSession = async (session, message) => {
-  debug("prompt-api", "Prompting, message length:", message.length);
-  const result = await session.prompt(message);
-  debug("prompt-api", "Response length:", result.length);
-  return result;
-};
+/* ── Prompting helpers ───────────────────────────────────────── */
 
 const withTimeout = (promise, ms) =>
   Promise.race([
@@ -89,16 +136,29 @@ const withTimeout = (promise, ms) =>
     ),
   ]);
 
+export const promptSession = async (session, message) => {
+  debug("prompt-api", "Prompting, message length:", message.length);
+  const result = await session.prompt(message);
+  logContextAfterPrompt(session, "prompt");
+  debug("prompt-api", "Response length:", result.length);
+  return result;
+};
+
 export const promptSessionStreaming = async (session, message, onChunk) => {
   debug("prompt-api", "Streaming prompt, message length:", message.length);
   const stream = session.promptStreaming(message);
   let result = "";
-  for await (const chunk of stream) {
-    result += chunk;
-    if (onChunk) onChunk(result);
-  }
-  debug("prompt-api", "Streaming complete, length:", result.length);
-  return result;
+  const streamPromise = (async () => {
+    for await (const chunk of stream) {
+      result += chunk;
+      if (onChunk) onChunk(result);
+    }
+    return result;
+  })();
+  const final = await withTimeout(streamPromise, config.timeouts.promptMs);
+  logContextAfterPrompt(session, "streaming");
+  debug("prompt-api", "Streaming complete, length:", final.length);
+  return final;
 };
 
 export const promptSessionConstrained = async (
@@ -111,6 +171,27 @@ export const promptSessionConstrained = async (
     session.prompt(message, { responseConstraint }),
     config.timeouts.promptMs,
   );
+  logContextAfterPrompt(session, "constrained");
   debug("prompt-api", "Constrained response length:", result.length);
   return result;
+};
+
+/**
+ * Constrained prompt with automatic retry on timeout.
+ * On timeout, calls `shortenContext(message)` to get a shorter version and retries once.
+ */
+export const promptSessionConstrainedWithRetry = async (
+  session,
+  message,
+  responseConstraint,
+  shortenContext,
+) => {
+  try {
+    return await promptSessionConstrained(session, message, responseConstraint);
+  } catch (err) {
+    if (!err.message.includes("timed out") || !shortenContext) throw err;
+    debug.warn("prompt-api", "Prompt timed out, retrying with shorter context");
+    const shorter = shortenContext(message);
+    return await promptSessionConstrained(session, shorter, responseConstraint);
+  }
 };
