@@ -182,7 +182,10 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       effectiveMaxResultLength = Math.floor(effectiveMaxResultLength * 0.5);
     }
 
-    emit("prompt", `Sending message (iteration ${i + 1})`);
+    emit("prompt", {
+      summary: `Sending message (iteration ${i + 1})`,
+      prompt: currentMessage,
+    });
     debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
 
     let raw;

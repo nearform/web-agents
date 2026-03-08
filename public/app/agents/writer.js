@@ -52,6 +52,11 @@ export const runWriter = async ({
   };
 
   emit("start", "Writer starting");
+  emit("prompt", {
+    summary: "Writer system prompt",
+    prompt: WRITER_SYSTEM_PROMPT,
+    kind: "system",
+  });
 
   const session = await createSession(WRITER_SYSTEM_PROMPT);
   reportStatus("active");
@@ -73,7 +78,6 @@ export const runWriter = async ({
   if (skipNotepadWrite) {
     // Chat-only mode: notepad stays untouched, produce answer from notepad context
     debug("Writer", "skipNotepadWrite=true — chat-only mode");
-    emit("prompt", "Composing chat reply from existing research");
 
     const history = formatChatHistory(chatHistory);
     const chatPrompt = `Answer the user's specific question directly and concisely using the research notepad below as your source material.
@@ -89,6 +93,10 @@ If the notepad doesn't contain enough information to answer, say so rather than 
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above.`;
 
+    emit("prompt", {
+      summary: "Composing chat reply from existing research",
+      prompt: chatPrompt,
+    });
     debug("Writer", "=== CHAT-ONLY PROMPT ===\n" + chatPrompt);
     let chatReply = await tryStreaming(chatPrompt, onStreamChunk, "Chat reply");
 
@@ -114,7 +122,6 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
   }
 
   // Full mode: write research to notepad, then produce chat answer
-  emit("prompt", "Composing notepad content");
 
   const hasResearch = researchBrief && researchBrief.trim().length > 0;
   const historyFull = formatChatHistory(chatHistory);
@@ -145,6 +152,10 @@ ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 User request: ${originalQuery}`;
   }
 
+  emit("prompt", {
+    summary: "Composing notepad content",
+    prompt: contentPrompt,
+  });
   debug("Writer", "=== CONTENT PROMPT ===\n" + contentPrompt);
   let notepadContent = await tryStreaming(
     contentPrompt,
@@ -174,10 +185,11 @@ User request: ${originalQuery}`;
   emit("tool-result", { name: "take_notes", result: "written" });
 
   // Generate chat reply
-  emit("prompt", "Composing chat reply");
+  const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
+  emit("prompt", { summary: "Composing chat reply", prompt: chatReplyPrompt });
   const chatReply = await promptSessionStreaming(
     session,
-    `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`,
+    chatReplyPrompt,
     onStreamChunk,
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);

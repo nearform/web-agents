@@ -52,6 +52,11 @@ export const runAgentLoop = async ({
 
   emit("start", `${agentName} starting`);
   debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
+  emit("prompt", {
+    summary: `${agentName} system prompt`,
+    prompt: systemPrompt,
+    kind: "system",
+  });
 
   const executableTools = makeTools(tools, {
     transformResult: slimToolResult,

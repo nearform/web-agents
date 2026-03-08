@@ -62,6 +62,7 @@ const formatDetail = (type, detail) => {
   if (type === "tool-error" && detail?.name) {
     return `${detail.name} ✗ ${detail.error || "unknown error"}`;
   }
+  if (detail?.summary) return detail.summary;
   return JSON.stringify(detail);
 };
 
@@ -95,6 +96,14 @@ const ActivityEntry = ({ entry, onClick }) => {
 const formatDetailRaw = (detail) => {
   if (detail == null) return "";
   if (typeof detail === "string") return detail;
+  if (detail?.prompt && typeof detail.prompt === "string") {
+    const parts = [];
+    if (detail.kind) parts.push(`[${detail.kind}]`);
+    if (detail.summary) parts.push(detail.summary);
+    parts.push("---");
+    parts.push(detail.prompt);
+    return parts.join("\n");
+  }
   try {
     const display = { ...detail };
     for (const [key, val] of Object.entries(display)) {
