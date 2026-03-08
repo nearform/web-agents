@@ -79,6 +79,9 @@ export const runCoordinator = async ({
   };
 
   emit("start", "Analyzing your request...");
+
+  // Coordinator's own context info (only from triage session)
+  let coordinatorContextInfo = null;
   reportStatus("Coordinator", "active");
 
   let researchBrief = null;
@@ -91,7 +94,8 @@ export const runCoordinator = async ({
         chatHistory,
       );
       needsResearch = triage.needsResearch;
-      reportStatus("Coordinator", "active", triage.contextInfo);
+      coordinatorContextInfo = triage.contextInfo || null;
+      reportStatus("Coordinator", "active", coordinatorContextInfo);
       debug("Coordinator", `Triage result: needsResearch=${needsResearch}`);
     } catch (err) {
       debug("Coordinator", `Triage failed, skipping research: ${err.message}`);
@@ -123,7 +127,8 @@ export const runCoordinator = async ({
             tools,
             onActivity,
             existingContext: truncateHalf(existingNotepad),
-            onContextUpdate: (info) => reportStatus("Researcher", "active", info),
+            onContextUpdate: (info) =>
+              reportStatus("Researcher", "active", info),
           });
         } catch (retryErr) {
           reportStatus("Researcher", "error");
@@ -220,7 +225,7 @@ export const runCoordinator = async ({
   }
 
   emit("received", "Writing complete");
-  reportStatus("Coordinator", "done");
+  reportStatus("Coordinator", "done", coordinatorContextInfo);
   emit("done", "All agents finished");
 
   return (

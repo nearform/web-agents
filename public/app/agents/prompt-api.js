@@ -73,9 +73,15 @@ const logContextAfterPrompt = (session, label) => {
     `Context after ${label}: ${info.pct}% (${info.used}/${info.total})`,
   );
   if (info.pct >= config.context.criticalPct) {
-    debug.warn("prompt-api", `Context CRITICAL after ${label}: ${info.pct}% (${info.used}/${info.total})`);
+    debug.warn(
+      "prompt-api",
+      `Context CRITICAL after ${label}: ${info.pct}% (${info.used}/${info.total})`,
+    );
   } else if (info.pct >= config.context.warnPct) {
-    debug.warn("prompt-api", `Context WARNING after ${label}: ${info.pct}% (${info.used}/${info.total})`);
+    debug.warn(
+      "prompt-api",
+      `Context WARNING after ${label}: ${info.pct}% (${info.used}/${info.total})`,
+    );
   }
 };
 

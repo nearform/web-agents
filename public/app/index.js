@@ -12,9 +12,24 @@ import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
 
 const INITIAL_AGENT_STATUSES = {
-  Coordinator: { status: "idle", contextPct: null, contextUsed: null, contextTotal: null },
-  Researcher: { status: "idle", contextPct: null, contextUsed: null, contextTotal: null },
-  Writer: { status: "idle", contextPct: null, contextUsed: null, contextTotal: null },
+  Coordinator: {
+    status: "idle",
+    contextPct: null,
+    contextUsed: null,
+    contextTotal: null,
+  },
+  Researcher: {
+    status: "idle",
+    contextPct: null,
+    contextUsed: null,
+    contextTotal: null,
+  },
+  Writer: {
+    status: "idle",
+    contextPct: null,
+    contextUsed: null,
+    contextTotal: null,
+  },
 };
 
 export const App = () => {
@@ -65,8 +80,10 @@ export const App = () => {
         [agentName]: {
           status: statusValue,
           contextPct: contextInfo?.pct ?? prev[agentName]?.contextPct ?? null,
-          contextUsed: contextInfo?.used ?? prev[agentName]?.contextUsed ?? null,
-          contextTotal: contextInfo?.total ?? prev[agentName]?.contextTotal ?? null,
+          contextUsed:
+            contextInfo?.used ?? prev[agentName]?.contextUsed ?? null,
+          contextTotal:
+            contextInfo?.total ?? prev[agentName]?.contextTotal ?? null,
         },
       }));
     },
