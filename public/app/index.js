@@ -6,6 +6,7 @@ import { NotepadPanel } from "./components/notepad-panel.js";
 import { ToolStatus } from "./components/tool-status.js";
 import { initRegistry, listTools } from "./bridge/tool-registry.js";
 import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
+import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
 
@@ -20,6 +21,9 @@ export const App = () => {
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
+    setDebugActivityCallback((event) => {
+      setActivities((prev) => [...prev, event]);
+    });
 
     const init = async () => {
       // Check Prompt API

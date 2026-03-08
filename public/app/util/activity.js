@@ -9,6 +9,7 @@ export const ActivityType = {
   TOOL_CALL: "tool-call",
   TOOL_RESULT: "tool-result",
   TOOL_ERROR: "tool-error",
+  SYSTEM: "system",
 };
 
 export const createEmitter = (agentName, onActivity) => (type, detail) => {

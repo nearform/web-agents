@@ -1,4 +1,4 @@
-/* global document:false, console:false, setTimeout:false */
+/* global document:false, setTimeout:false */
 import { IframeParentTransport } from "@mcp-b/transports";
 import { config } from "../config.js";
 import { debug } from "../util/debug.js";
@@ -58,7 +58,7 @@ export const initBridge = async () => {
   };
 
   transport.onerror = (err) => {
-    console.warn("[iframe-bridge] Transport error:", err);
+    debug.warn("iframe-bridge", "Transport error:", err);
   };
 
   await transport.start();
@@ -73,9 +73,9 @@ export const initBridge = async () => {
         ),
       ),
     ]);
-    console.log("[iframe-bridge] iframe-server ready");
+    debug.info("iframe-bridge", "iframe-server ready");
   } catch (err) {
-    console.warn("[iframe-bridge]", err.message);
+    debug.warn("iframe-bridge", err.message);
   }
 };
 
@@ -85,7 +85,7 @@ export const discoverTools = async () => {
     debug("iframe-bridge", "Discovered tools:", result.tools);
     return result.tools || [];
   } catch (err) {
-    console.warn("[iframe-bridge] Tool discovery failed:", err.message);
+    debug.warn("iframe-bridge", "Tool discovery failed:", err.message);
     return [];
   }
 };

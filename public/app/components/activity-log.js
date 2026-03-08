@@ -6,6 +6,7 @@ const AGENT_COLORS = {
   Coordinator: "agent-coordinator",
   Researcher: "agent-researcher",
   Writer: "agent-writer",
+  System: "agent-system",
 };
 
 const formatTime = (ts) => {
@@ -38,6 +39,8 @@ const getIcon = (type) => {
       return "ph ph-chat-circle";
     case ActivityType.DONE:
       return "ph ph-flag-checkered";
+    case ActivityType.SYSTEM:
+      return "ph ph-terminal";
     default:
       return "ph ph-dot";
   }

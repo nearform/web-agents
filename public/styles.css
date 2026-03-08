@@ -444,6 +444,11 @@ body {
   color: var(--agent-writer);
 }
 
+.agent-system .activity-agent,
+.agent-system i {
+  color: var(--color-text-muted);
+}
+
 /* Notepad Panel */
 .notepad-content {
   flex: 1;
@@ -611,6 +616,14 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.tool-status-item:hover {
+  background: var(--color-bg);
 }
 
 .tool-status-dot {
@@ -741,6 +754,200 @@ body {
   word-break: break-word;
   background: var(--color-bg);
   border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Tool Detail Modal — two-pane layout */
+.tool-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  width: 90%;
+  max-width: 960px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-modal-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tool-modal-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  min-width: 0;
+}
+
+.tool-modal-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tool-modal-right-header {
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.tool-modal-schema {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-modal-description {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.tool-modal-properties {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.tool-modal-properties th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-modal-properties td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-bg);
+}
+
+.tool-modal-required {
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.tool-modal-form {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tool-modal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.tool-modal-input {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.tool-modal-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.tool-modal-actions {
+  padding: 12px 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tool-modal-execute {
+  padding: 6px 16px;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-dark)
+  );
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.tool-modal-execute:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 229, 164, 0.3);
+}
+
+.tool-modal-execute:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tool-modal-result {
+  margin: 0;
+  padding: 16px;
+  flex: 1;
+  overflow: auto;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--color-bg);
+  border-radius: 0 0 var(--radius) 0;
+  color: var(--color-text-muted);
+}
+
+.tool-modal-source {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .tool-modal-body {
+    flex-direction: column;
+  }
+
+  .tool-modal-left {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tool-modal-right {
+    max-height: 250px;
+  }
 }
 
 /* Responsive */

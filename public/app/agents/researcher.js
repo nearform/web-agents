@@ -1,4 +1,3 @@
-/* global console:false */
 import { runAgentLoop } from "./orchestrator.js";
 import { debug } from "../util/debug.js";
 import { getResearcherSystemPrompt } from "./prompts.js";
@@ -14,8 +13,9 @@ export const runResearcher = async ({
   );
 
   if (searchTools.length === 0) {
-    console.error(
-      "[Researcher] search_nearform_knowledge not found in tools!",
+    debug.error(
+      "Researcher",
+      "search_nearform_knowledge not found in tools!",
       "Available tools:",
       tools.map((t) => t.name),
     );
@@ -33,8 +33,9 @@ export const runResearcher = async ({
     (t) => t.name === "search_nearform_knowledge",
   )?.connected;
   if (!connected) {
-    console.warn(
-      "[Researcher] search_nearform_knowledge found but not connected",
+    debug.warn(
+      "Researcher",
+      "search_nearform_knowledge found but not connected",
     );
   }
 
@@ -60,8 +61,9 @@ User question: ${query}`,
     !result.includes("nearform") &&
     result.length < 100
   ) {
-    console.warn(
-      "[Researcher] Result looks empty or tool was never called:",
+    debug.warn(
+      "Researcher",
+      "Result looks empty or tool was never called:",
       result,
     );
     debug("Researcher", "WARNING: Suspiciously short result:", result);

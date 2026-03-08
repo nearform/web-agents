@@ -1,4 +1,4 @@
-/* global navigator:false, console:false */
+/* global navigator:false */
 import {
   initBridge,
   discoverTools,
@@ -16,11 +16,12 @@ export const initRegistry = async () => {
   try {
     remoteTools = await discoverTools();
     connected = remoteTools.length > 0;
-    console.log(
-      `[tool-registry] Discovered ${remoteTools.length} remote tools`,
+    debug.info(
+      "tool-registry",
+      `Discovered ${remoteTools.length} remote tools`,
     );
   } catch {
-    console.warn("[tool-registry] Remote tool discovery failed");
+    debug.warn("tool-registry", "Remote tool discovery failed");
   }
 
   registerLocalToolsWithWebMcp();
@@ -82,5 +83,5 @@ const registerLocalToolsWithWebMcp = () => {
       }),
     });
   }
-  console.log("[tool-registry] Registered local tools with WebMCP");
+  debug.info("tool-registry", "Registered local tools with WebMCP");
 };
