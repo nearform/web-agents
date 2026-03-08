@@ -1,3 +1,4 @@
+/* global document:false */
 import { html } from "../util/html.js";
 import React from "react";
 import { ActivityType } from "../util/activity.js";
@@ -68,26 +69,21 @@ const isToolEvent = (type) =>
   type === "tool-call" || type === "tool-result" || type === "tool-error";
 
 const ActivityEntry = ({ entry, onClick }) => {
-  const [expanded, setExpanded] = React.useState(false);
   const expandable = isToolEvent(entry.type);
   const detailStr = formatDetail(entry.type, entry.detail);
 
-  const handleClick = () => {
-    if (expandable) setExpanded(!expanded);
-    onClick(entry);
-  };
-
   return html`
     <div
-      className="activity-entry ${AGENT_COLORS[entry.agent] || ""}"
-      onClick=${handleClick}
+      className="activity-entry ${AGENT_COLORS[entry.agent] || ""} ${expandable
+        ? "expandable"
+        : ""}"
+      onClick=${() => expandable && onClick(entry)}
     >
       <span className="activity-time">${formatTime(entry.timestamp)}</span>
       <i className="${getIcon(entry.type)}"></i>
       <span className="activity-agent">${entry.agent}</span>
       <span className="activity-detail">
-        ${expanded ? detailStr : detailStr.slice(0, 120)}
-        ${!expanded && detailStr.length > 120 ? "..." : ""}
+        ${detailStr.slice(0, 120)}${detailStr.length > 120 ? "..." : ""}
       </span>
     </div>
   `;
@@ -104,6 +100,15 @@ const formatDetailRaw = (detail) => {
 };
 
 const DetailModal = ({ entry, onClose }) => {
+  React.useEffect(() => {
+    if (!entry) return;
+    const handleKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [entry, onClose]);
+
   if (!entry) return null;
 
   const handleOverlayClick = (e) => {
