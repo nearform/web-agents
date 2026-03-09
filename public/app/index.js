@@ -13,6 +13,11 @@ import { runCoordinator } from "./agents/coordinator.js";
 import { detectPlatformStatus } from "./util/platform-status.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
 
+const ExtLink = ({ href, children }) =>
+  html`<a href=${href} target="_blank" rel="noopener noreferrer"
+    >${children}</a
+  >`;
+
 const INITIAL_AGENT_STATUSES = {
   Coordinator: {
     status: "idle",
@@ -166,8 +171,17 @@ export const App = () => {
       <header className="app-header">
         <h1>Research Agents in the Web</h1>
         <p className="intro">
-          Three AI agents research Nearform knowledge using WebMCP and
-          in-browser AI models${" "}
+          Three AI agents research${" "}
+          <${ExtLink} href="https://nearform.com">Nearform<//>
+          ${" "}knowledge using${" "}
+          <${ExtLink} href="https://github.com/webmachinelearning/webmcp"
+            >WebMCP<//
+          >
+          ${" "}and in-browser${" "}
+          <${ExtLink}
+            href="https://developer.chrome.com/docs/extensions/ai/prompt-api"
+            >AI models<//
+          >. ${" "}
           <span
             className="status-badge status-badge--${status === "Ready"
               ? "ready"
