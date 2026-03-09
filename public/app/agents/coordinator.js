@@ -31,21 +31,26 @@ const formatChatHistory = (chatHistory, maxPairs = 3) => {
 
 const truncateHalf = (text) => {
   if (!text) return text;
-  return (
-    text.slice(0, Math.ceil(text.length * config.context.retryReduction)) +
-    "\n...[truncated for retry]"
-  );
+  const budget = Math.ceil(text.length * config.context.retryReduction);
+  if (text.length <= budget) return text;
+  const cut = text.lastIndexOf("\n", budget);
+  const end = cut > 0 ? cut : budget;
+  return text.slice(0, end) + "\n...[truncated for retry]";
 };
 
-async function triageFollowUp(userMessage, existingNotepad, chatHistory) {
+async function triageFollowUp(userMessage, existingNotepad, chatHistory, emit) {
   const session = await createSession(TRIAGE_SYSTEM_PROMPT);
   try {
     const history = formatChatHistory(chatHistory);
-    const raw = await promptSessionConstrained(
-      session,
-      `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`,
-      TRIAGE_SCHEMA,
-    );
+    const prompt = `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
+    if (emit) {
+      emit("prompt", {
+        summary: "Triage: deciding if research needed",
+        prompt,
+        kind: "triage",
+      });
+    }
+    const raw = await promptSessionConstrained(session, prompt, TRIAGE_SCHEMA);
     const contextInfo = getContextInfo(session);
     const parsed = JSON.parse(raw);
     return { needsResearch: parsed.needs_research === true, contextInfo };
@@ -81,6 +86,7 @@ async function runCoordinatorPipeline({
         userMessage,
         existingNotepad,
         chatHistory,
+        emit,
       );
       needsResearch = triage.needsResearch;
       coordinatorContextInfo = triage.contextInfo || null;

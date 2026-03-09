@@ -22,10 +22,11 @@ const formatChatHistory = (chatHistory, maxPairs = 3) => {
 
 const truncateHalf = (text) => {
   if (!text) return text;
-  return (
-    text.slice(0, Math.ceil(text.length * config.context.retryReduction)) +
-    "\n...[truncated for retry]"
-  );
+  const budget = Math.ceil(text.length * config.context.retryReduction);
+  if (text.length <= budget) return text;
+  const cut = text.lastIndexOf("\n", budget);
+  const end = cut > 0 ? cut : budget;
+  return text.slice(0, end) + "\n...[truncated for retry]";
 };
 
 export const runWriter = async ({
@@ -108,6 +109,10 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
         existingNotepad,
         truncateHalf(existingNotepad),
       );
+      emit("prompt", {
+        summary: "Retry chat reply with shortened context",
+        prompt: retryPrompt,
+      });
       chatReply = await promptSessionStreaming(
         session,
         retryPrompt,
@@ -175,6 +180,10 @@ User request: ${originalQuery}`;
     const retryPrompt = contentPrompt
       .replace(researchBrief || "", shorterBrief || "")
       .replace(existingNotepad || "", shorterNotepad);
+    emit("prompt", {
+      summary: "Retry notepad write with shortened context",
+      prompt: retryPrompt,
+    });
     notepadContent = await promptSessionStreaming(
       session,
       retryPrompt,

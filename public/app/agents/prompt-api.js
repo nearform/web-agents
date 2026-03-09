@@ -195,6 +195,7 @@ export const promptSessionConstrainedWithRetry = async (
   message,
   responseConstraint,
   shortenContext,
+  onRetry,
 ) => {
   try {
     return await promptSessionConstrained(session, message, responseConstraint);
@@ -202,6 +203,7 @@ export const promptSessionConstrainedWithRetry = async (
     if (!err.message.includes("timed out") || !shortenContext) throw err;
     debug.warn("prompt-api", "Prompt timed out, retrying with shorter context");
     const shorter = shortenContext(message);
+    if (onRetry) onRetry(shorter);
     return await promptSessionConstrained(session, shorter, responseConstraint);
   }
 };

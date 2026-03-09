@@ -131,19 +131,53 @@ const buildResponseSchema = (tools) => ({
   required: ["action"],
 });
 
-/** Halve tool result content in a message string for retry. */
+/** Truncate text at the last newline before maxChars. */
+const truncateAtLineBoundary = (text, maxChars) => {
+  if (text.length <= maxChars) return text;
+  const cut = text.lastIndexOf("\n", maxChars);
+  return (
+    (cut > 0 ? text.slice(0, cut) : text.slice(0, maxChars)) +
+    "\n...[truncated for retry]"
+  );
+};
+
+/**
+ * Halve tool result content in a message string for retry.
+ * If the result is JSON with a `posts` array, drops posts from the end.
+ * Otherwise falls back to line-boundary truncation.
+ */
 const halveToolResults = (message) => {
-  // Find "Tool results:\n" blocks and halve them
   return message.replace(
     /(Tool results:\n)([\s\S]*?)(\n\n)/g,
-    (_, prefix, content, suffix) =>
-      prefix +
-      content.slice(
-        0,
-        Math.ceil(content.length * config.context.retryReduction),
-      ) +
-      "...[truncated for retry]" +
-      suffix,
+    (_, prefix, content, suffix) => {
+      const budget = Math.ceil(content.length * config.context.retryReduction);
+      // Try structure-aware truncation on <tool_result> tags
+      const shortened = content.replace(
+        /(<tool_result name="[^"]*">)([\s\S]*?)(<\/tool_result>)/g,
+        (match, open, body, close) => {
+          try {
+            const obj = JSON.parse(body);
+            if (obj && Array.isArray(obj.posts) && obj.posts.length > 1) {
+              const keep = Math.max(1, Math.ceil(obj.posts.length * 0.5));
+              obj.posts = obj.posts.slice(0, keep);
+              return open + JSON.stringify(obj) + close;
+            }
+          } catch {
+            // not JSON with posts — fall through
+          }
+          // Line-boundary fallback for this tool_result
+          const resultBudget = Math.ceil(
+            body.length * config.context.retryReduction,
+          );
+          return open + truncateAtLineBoundary(body, resultBudget) + close;
+        },
+      );
+      // If no <tool_result> tags were found, truncate the whole content block
+      if (shortened === content) {
+        return prefix + truncateAtLineBoundary(content, budget) + suffix;
+      }
+      return prefix + shortened + suffix;
+    },
   );
 };
 
@@ -213,6 +247,11 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
         currentMessage,
         responseConstraint,
         halveToolResults,
+        (shorter) =>
+          emit("prompt", {
+            summary: `Retry with shortened context (iteration ${i + 1})`,
+            prompt: shorter,
+          }),
       );
       // Report context after successful prompt
       if (onContextUpdate) {

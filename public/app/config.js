@@ -9,7 +9,7 @@ export const config = {
     : "https://nearform.github.io",
   vectorSearchPath: isLocalDev ? "/public/" : "/vector-search-web/",
   timeouts: {
-    promptMs: 60_000,
+    promptMs: 120_000,
     bridgeRequestMs: 30_000,
     bridgeReadyMs: 15_000,
   },
