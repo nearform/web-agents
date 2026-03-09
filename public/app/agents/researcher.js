@@ -46,6 +46,8 @@ export const runResearcher = async ({
     searchTools.map((t) => `${t.name} (${t.source}, connected=${t.connected})`),
   );
 
+  // Each runAgentLoop call creates and destroys its own session,
+  // so coordinator retries automatically get fresh sessions.
   const result = await runAgentLoop({
     systemPrompt: getResearcherSystemPrompt(searchTools),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
