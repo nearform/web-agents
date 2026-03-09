@@ -90,6 +90,9 @@ export const discoverTools = async () => {
   }
 };
 
+// MCP tools/call results use a content array per the spec:
+// { content: [{ type: "text", text: "..." }], isError: false }
+// See: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
 export const callTool = async (name, args) => {
   debug("iframe-bridge", "callTool:", name, args);
   const result = await sendRequest("tools/call", { name, arguments: args });
@@ -99,5 +102,7 @@ export const callTool = async (name, args) => {
     name,
     JSON.stringify(result).slice(0, 200),
   );
-  return result;
+  // Unwrap MCP content array → parse the JSON text payload for downstream consumers
+  const text = result?.content?.[0]?.text;
+  return text ? JSON.parse(text) : result;
 };
