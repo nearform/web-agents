@@ -10,6 +10,8 @@ import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
+import { detectPlatformStatus } from "./util/platform-status.js";
+import { PlatformStatusModal } from "./components/platform-status-modal.js";
 
 const INITIAL_AGENT_STATUSES = {
   Coordinator: {
@@ -43,6 +45,8 @@ export const App = () => {
   const [agentStatuses, setAgentStatuses] = React.useState(
     INITIAL_AGENT_STATUSES,
   );
+  const [platformStatus, setPlatformStatus] = React.useState(null);
+  const [showPlatformModal, setShowPlatformModal] = React.useState(false);
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
@@ -60,6 +64,15 @@ export const App = () => {
       // Init tool registry (discovers remote + local tools)
       const discovered = await initRegistry();
       setTools(discovered);
+
+      // Detect platform status
+      const ps = detectPlatformStatus(apiCheck);
+      setPlatformStatus(ps);
+
+      // Auto-open modal if LanguageModel is unavailable
+      if (!ps.languageModel.available) {
+        setShowPlatformModal(true);
+      }
 
       if (apiCheck.available) {
         setStatus("Ready");
@@ -171,6 +184,18 @@ export const App = () => {
           >
             <i className="ph ph-github-logo"></i>
           </a>
+          ${" "}
+          <button
+            className="platform-status-btn ${platformStatus &&
+            (!platformStatus.languageModel.available ||
+              !platformStatus.webMcp.native)
+              ? "has-issues"
+              : ""}"
+            onClick=${() => setShowPlatformModal(true)}
+            aria-label="Platform status"
+          >
+            <i className="ph ph-info"></i>
+          </button>
         </p>
       </header>
 
@@ -194,6 +219,14 @@ export const App = () => {
         <${AgentStatus} statuses=${agentStatuses} />
         <${ToolStatus} tools=${tools} />
       </div>
+
+      ${showPlatformModal &&
+      html`
+        <${PlatformStatusModal}
+          platformStatus=${platformStatus}
+          onClose=${() => setShowPlatformModal(false)}
+        />
+      `}
 
       <footer className="footer">
         <a

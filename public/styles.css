@@ -1028,6 +1028,127 @@ body {
   }
 }
 
+/* Platform Status Button */
+.platform-status-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: text-bottom;
+  width: 22px;
+  height: 22px;
+  margin-left: 4px;
+  background: var(--color-border);
+  border: none;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.platform-status-btn:hover {
+  background: var(--color-accent);
+  color: white;
+}
+
+.platform-status-btn.has-issues::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+}
+
+/* Platform Status Modal Body */
+.platform-status-body {
+  padding: 16px;
+  overflow: auto;
+  max-height: 70vh;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.platform-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.platform-status-row + .platform-status-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.platform-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platform-status-dot.ok {
+  background: #10b981;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+}
+
+.platform-status-dot.warn {
+  background: #f59e0b;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.4);
+}
+
+.platform-status-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+.platform-status-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.platform-status-chrome-ver {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.platform-status-instructions {
+  padding: 4px 0 12px 18px;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.platform-status-instructions p {
+  margin: 0 0 6px;
+}
+
+.platform-status-instructions ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.platform-status-instructions li {
+  margin-bottom: 4px;
+}
+
+.platform-status-instructions code {
+  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-size: 0.78rem;
+  background: var(--color-bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .workspace {
