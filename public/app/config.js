@@ -1,5 +1,13 @@
+/* global window:false */
+const isLocalDev =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
 export const config = {
-  vectorSearchOrigin: "http://localhost:4600",
+  vectorSearchOrigin: isLocalDev
+    ? "http://localhost:4600"
+    : "https://nearform.github.io",
+  vectorSearchPath: isLocalDev ? "/public/" : "/vector-search-web/",
   timeouts: {
     promptMs: 60_000,
     bridgeRequestMs: 30_000,

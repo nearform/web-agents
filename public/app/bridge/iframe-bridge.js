@@ -3,7 +3,7 @@ import { IframeParentTransport } from "@mcp-b/transports";
 import { config } from "../config.js";
 import { debug } from "../util/debug.js";
 
-const IFRAME_SRC = `${config.vectorSearchOrigin}/public/`;
+const IFRAME_SRC = `${config.vectorSearchOrigin}${config.vectorSearchPath}`;
 
 let transport = null;
 let messageId = 0;
