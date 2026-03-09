@@ -10,7 +10,7 @@ export const URL_RULES = `- ONLY use facts and URLs from the research findings p
   CORRECT: [My Article](https://nearform.com/insights/my-article)
   WRONG:   [My Article (https://nearform.com/insights/my-article)]
 - If a date is available, put it AFTER the link, not inside it: [Title](URL) (2025-01-15)
-- Each URL may appear at most once.
+- DEDUPLICATION: Each URL may appear AT MOST ONCE in your entire output. If you have already cited a URL, do NOT cite it again — even in a different section or with different anchor text. Multiple distinct URLs are great; repeating the same URL is not.
 - URLs must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
 - Replace "/blog/" with "/insights/" in any URLs.`;
 
@@ -111,6 +111,7 @@ ${URL_RULES}
 - Use markdown: headings (##), bullet points, **bold** for emphasis.
 - Include source citations as [Title](URL) links.
 - Be comprehensive — include all relevant details, excerpts, and citations from the research. Preserve important technical content rather than over-summarizing.
+- NEVER repeat the same link. Each unique URL should appear exactly once. Cite a source once where it's most relevant, then refer back to it by title without re-linking.
 - Output ONLY the markdown content, no preamble or wrapping. Do NOT wrap output in markdown code fences (\`\`\`).`;
 
 export const TRIAGE_SYSTEM_PROMPT = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.

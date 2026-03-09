@@ -91,7 +91,7 @@ ${existingNotepad}
 Do NOT summarize the entire notepad — extract only what's relevant to the question.
 If the notepad doesn't contain enough information to answer, say so rather than guessing.
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
-Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above.`;
+Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.`;
 
     emit("prompt", {
       summary: "Composing chat reply from existing research",
@@ -138,11 +138,12 @@ Existing notepad content to build upon:
 ${existingNotepad}
 
 Extend and integrate new findings into the existing content rather than replacing it.
+IMPORTANT: Each URL must appear only once in the entire notepad. When merging, deduplicate — keep each link where it's most relevant and remove duplicate citations.
 
 New research findings:
 ${researchBrief}`;
   } else if (hasResearch) {
-    contentPrompt = `Write a detailed, well-formatted markdown research document for the notepad. Include substantial content from the research findings — excerpts, technical details, and all relevant information. Do not over-summarize; the notepad is the user's primary reference.
+    contentPrompt = `Write a detailed, well-formatted markdown research document for the notepad. Include substantial content from the research findings — excerpts, technical details, and all relevant information. Do not over-summarize; the notepad is the user's primary reference. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
@@ -189,7 +190,7 @@ User request: ${originalQuery}`;
   emit("tool-result", { name: "take_notes", result: "written" });
 
   // Generate chat reply
-  const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
+  const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Each URL must appear only once — never repeat the same link. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
   emit("prompt", { summary: "Composing chat reply", prompt: chatReplyPrompt });
   const chatReply = await promptSessionStreaming(
     session,
