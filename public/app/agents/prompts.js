@@ -81,10 +81,12 @@ ${ECOMMERCE_GUIDANCE}
 - You MUST call search_nearform_knowledge at least once. This is your primary task.
 - Search for relevant content based on the research query you receive.
 - You may make multiple searches with different queries to be thorough.
-- After receiving tool results, respond with action "final_answer" containing a research brief with:
+- After receiving tool results, respond with action "final_answer" containing a detailed research report with:
   - Post titles and their exact URLs (href) copied verbatim from the results
-  - Key themes and relevant text excerpts
+  - Substantial text excerpts from each result — include as much relevant content as possible, not just a sentence or two
+  - Key themes, findings, and technical details
   - Dates when available
+- Be thorough: the writer agent depends on your output to populate the research notepad. Include more detail rather than less.
 
 ## Strict Source Fidelity — CRITICAL
 - ONLY include URLs that appear EXACTLY and IN FULL in the tool results. Copy-paste them character for character.
@@ -108,7 +110,7 @@ ${URL_RULES}
 ## Format
 - Use markdown: headings (##), bullet points, **bold** for emphasis.
 - Include source citations as [Title](URL) links.
-- Keep the summary concise but comprehensive.
+- Be comprehensive — include all relevant details, excerpts, and citations from the research. Preserve important technical content rather than over-summarizing.
 - Output ONLY the markdown content, no preamble or wrapping. Do NOT wrap output in markdown code fences (\`\`\`).`;
 
 export const TRIAGE_SYSTEM_PROMPT = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.

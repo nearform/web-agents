@@ -58,7 +58,7 @@ export const runWriter = async ({
     kind: "system",
   });
 
-  const session = await createSession(WRITER_SYSTEM_PROMPT);
+  let session = await createSession(WRITER_SYSTEM_PROMPT);
   reportStatus("active");
 
   const tryStreaming = async (prompt, onChunk, label) => {
@@ -101,7 +101,9 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
     let chatReply = await tryStreaming(chatPrompt, onStreamChunk, "Chat reply");
 
     if (chatReply == null) {
-      // Retry with truncated notepad
+      // Retry with truncated notepad and fresh session
+      session.destroy();
+      session = await createSession(WRITER_SYSTEM_PROMPT);
       const retryPrompt = chatPrompt.replace(
         existingNotepad,
         truncateHalf(existingNotepad),
@@ -128,7 +130,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
   let contentPrompt;
 
   if (hasResearch && existingNotepad) {
-    contentPrompt = `Update the existing research notepad based on new research findings.
+    contentPrompt = `Update the existing research notepad by integrating new research findings in detail. Preserve existing content and add substantial new material — excerpts, technical details, and citations.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
@@ -140,7 +142,7 @@ Extend and integrate new findings into the existing content rather than replacin
 New research findings:
 ${researchBrief}`;
   } else if (hasResearch) {
-    contentPrompt = `Write a well-formatted markdown research summary for the notepad.
+    contentPrompt = `Write a detailed, well-formatted markdown research document for the notepad. Include substantial content from the research findings — excerpts, technical details, and all relevant information. Do not over-summarize; the notepad is the user's primary reference.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
@@ -164,7 +166,9 @@ User request: ${originalQuery}`;
   );
 
   if (notepadContent == null) {
-    // Retry with truncated inputs
+    // Retry with truncated inputs and fresh session
+    session.destroy();
+    session = await createSession(WRITER_SYSTEM_PROMPT);
     const shorterBrief = truncateHalf(researchBrief);
     const shorterNotepad = existingNotepad ? truncateHalf(existingNotepad) : "";
     const retryPrompt = contentPrompt

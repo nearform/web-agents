@@ -55,15 +55,10 @@ async function triageFollowUp(userMessage, existingNotepad, chatHistory) {
 }
 
 /**
- * Coordinator agent: decides whether to research or reuse notepad,
- * delegates to Researcher and Writer agents, returns a chat answer.
- *
- * Decision logic:
- * - existingNotepad absent              → full pipeline (research → notepad → chat)
- * - existingNotepad + LLM triage=true   → research runs, notepad merged
- * - existingNotepad + LLM triage=false  → skip research, chat-only answer
+ * Run the full coordinator pipeline: triage → research → write → chat answer.
+ * Throws on errors so the outer retry loop can catch timeouts and restart.
  */
-export const runCoordinator = async ({
+async function runCoordinatorPipeline({
   userMessage,
   tools,
   onActivity,
@@ -71,15 +66,9 @@ export const runCoordinator = async ({
   chatHistory,
   onStreamChunk,
   onNotepadStreamChunk,
-  onAgentStatus,
-}) => {
-  const emit = createEmitter("Coordinator", onActivity);
-  const reportStatus = (agentName, status, contextInfo) => {
-    if (onAgentStatus) onAgentStatus(agentName, status, contextInfo);
-  };
-
-  emit("start", "Analyzing your request...");
-
+  emit,
+  reportStatus,
+}) {
   // Coordinator's own context info (only from triage session)
   let coordinatorContextInfo = null;
   reportStatus("Coordinator", "active");
@@ -133,12 +122,12 @@ export const runCoordinator = async ({
         } catch (retryErr) {
           reportStatus("Researcher", "error");
           emit("error", `Research retry failed: ${retryErr.message}`);
-          return `I wasn't able to complete the research. Error: ${retryErr.message}`;
+          throw retryErr;
         }
       } else {
         reportStatus("Researcher", "error");
         emit("error", `Research failed: ${err.message}`);
-        return `I wasn't able to complete the research. Error: ${err.message}`;
+        throw err;
       }
     }
     // Retry without filters if research came back empty
@@ -212,18 +201,12 @@ export const runCoordinator = async ({
       } catch (retryErr) {
         reportStatus("Writer", "error");
         emit("error", `Writer retry failed: ${retryErr.message}`);
-        if (researchBrief) {
-          return `Research was completed but writing failed. Here's what was found:\n\n${researchBrief}`;
-        }
-        return `Writing failed: ${retryErr.message}`;
+        throw retryErr;
       }
     } else {
       reportStatus("Writer", "error");
       emit("error", `Writing failed: ${err.message}`);
-      if (researchBrief) {
-        return `Research was completed but writing failed. Here's what was found:\n\n${researchBrief}`;
-      }
-      return `Writing failed: ${err.message}`;
+      throw err;
     }
   }
 
@@ -235,4 +218,60 @@ export const runCoordinator = async ({
     writerAnswer ||
     `I've ${existingNotepad ? "updated" : "written"} the research notepad with my findings. Check the notepad panel for the full result.`
   );
+}
+
+/**
+ * Coordinator agent: decides whether to research or reuse notepad,
+ * delegates to Researcher and Writer agents, returns a chat answer.
+ *
+ * Decision logic:
+ * - existingNotepad absent              → full pipeline (research → notepad → chat)
+ * - existingNotepad + LLM triage=true   → research runs, notepad merged
+ * - existingNotepad + LLM triage=false  → skip research, chat-only answer
+ *
+ * On timeout failures, retries the full pipeline with fresh sessions.
+ */
+export const runCoordinator = async ({
+  userMessage,
+  tools,
+  onActivity,
+  existingNotepad,
+  chatHistory,
+  onStreamChunk,
+  onNotepadStreamChunk,
+  onAgentStatus,
+}) => {
+  const emit = createEmitter("Coordinator", onActivity);
+  const reportStatus = (agentName, status, contextInfo) => {
+    if (onAgentStatus) onAgentStatus(agentName, status, contextInfo);
+  };
+  const maxRetries = config.agents.maxCoordinatorRetries ?? 1;
+
+  emit("start", "Analyzing your request...");
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await runCoordinatorPipeline({
+        userMessage,
+        tools,
+        onActivity,
+        existingNotepad,
+        chatHistory,
+        onStreamChunk,
+        onNotepadStreamChunk,
+        emit,
+        reportStatus,
+      });
+    } catch (err) {
+      if (attempt < maxRetries && err.message.includes("timed out")) {
+        emit(
+          "retry",
+          `Pipeline timed out — restarting with new sessions (attempt ${attempt + 2})`,
+        );
+        continue;
+      }
+      emit("error", `Pipeline failed: ${err.message}`);
+      return `I wasn't able to complete the request. Error: ${err.message}`;
+    }
+  }
 };

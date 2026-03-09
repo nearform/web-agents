@@ -29,7 +29,7 @@ const slimToolResult = (result) => {
         title: p.title,
         href: p.href,
         date: p.date,
-        excerpt: text.slice(0, 400),
+        excerpt: text.slice(0, config.agents.maxExcerptChars || 800),
       };
     }),
   };
