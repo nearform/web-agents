@@ -1,4 +1,4 @@
-# WebMCP Demo
+# Web Agents
 
 An experiment in on-device, in-browser AI agents using [WebMCP](https://github.com/webmachinelearning/webmcp) tools and the [Chrome Prompt API](https://developer.chrome.com/docs/extensions/ai/prompt-api) AI models. Search, research, and create answers/artifacts around Nearform's [articles](https://nearform.com/insights/) and [case studies](https://nearform.com/work/) entirely in the browser!
 

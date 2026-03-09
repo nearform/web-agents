@@ -164,9 +164,10 @@ export const App = () => {
   return html`
     <div className="app-container">
       <header className="app-header">
-        <h1>WebMCP Multi-Agent Demo</h1>
+        <h1>Research Agents in the Web</h1>
         <p className="intro">
-          Three AI agents collaborate using cross-origin WebMCP tools${" "}
+          Three AI agents research Nearform knowledge using WebMCP and
+          in-browser AI models${" "}
           <span
             className="status-badge status-badge--${status === "Ready"
               ? "ready"
@@ -176,7 +177,7 @@ export const App = () => {
           </span>
           ${" "}
           <a
-            href="https://github.com/nearform/webmcp-demo"
+            href="https://github.com/nearform/web-agents"
             target="_blank"
             rel="noopener noreferrer"
             className="intro-github-link"
