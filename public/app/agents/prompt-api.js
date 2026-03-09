@@ -9,7 +9,7 @@ const PROMPT_OPTIONS = {
 
 export const checkAvailability = async () => {
   if (typeof LanguageModel === "undefined") {
-    return { available: false, reason: "Prompt API not available" };
+    return { available: false, reason: "Not available" };
   }
   try {
     const status = await LanguageModel.availability(PROMPT_OPTIONS);

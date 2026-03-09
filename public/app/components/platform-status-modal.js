@@ -112,8 +112,11 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
             <div className="platform-status-instructions">
               ${!isChrome
                 ? html`<p>
-                    This feature requires <strong>Chrome 146+</strong>. Your
-                    current browser is not supported.
+                    Native WebMCP requires <strong>Chrome 146+</strong>. Your
+                    current browser is not
+                    supported${webMcpPolyfilled
+                      ? ", but a polyfill is active to provide functionality"
+                      : ""}.
                   </p>`
                 : html`
                     <p>To enable native WebMCP:</p>
