@@ -1,3 +1,4 @@
+/* global navigator:false, setTimeout:false */
 import { html } from "../util/html.js";
 import React from "react";
 import { callTool } from "../bridge/tool-registry.js";
@@ -21,6 +22,17 @@ const ToolDetailModal = ({ tool, onClose }) => {
   );
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState(null);
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = async () => {
+    if (result == null) return;
+    const text = result.ok
+      ? JSON.stringify(result.data, null, 2)
+      : `Error: ${result.data}`;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const properties = tool.inputSchema?.properties || {};
   const required = tool.inputSchema?.required || [];
@@ -194,7 +206,23 @@ const ToolDetailModal = ({ tool, onClose }) => {
           </div>
 
           <div className="tool-modal-right">
-            <div className="tool-modal-right-header">Output</div>
+            <div className="tool-modal-right-header">
+              <span>Output</span>
+              ${result != null &&
+              html`
+                <button
+                  className="tool-modal-copy-btn"
+                  onClick=${handleCopy}
+                  title=${copied ? "Copied!" : "Copy raw result"}
+                >
+                  <i className="ph ph-${copied ? "check" : "copy"}"></i>
+                  ${copied &&
+                  html`<span className="tool-modal-copy-tooltip"
+                    >Copied!</span
+                  >`}
+                </button>
+              `}
+            </div>
             <pre className="tool-modal-result">
 ${result == null
                 ? "No output yet. Execute the tool to see results."

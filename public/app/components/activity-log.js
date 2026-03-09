@@ -1,4 +1,4 @@
-/* global document:false */
+/* global document:false, navigator:false, setTimeout:false */
 import { html } from "../util/html.js";
 import React from "react";
 import { ActivityType } from "../util/activity.js";
@@ -123,6 +123,8 @@ const formatDetailRaw = (detail) => {
 };
 
 const DetailModal = ({ entry, onClose }) => {
+  const [copied, setCopied] = React.useState(false);
+
   React.useEffect(() => {
     if (!entry) return;
     const handleKey = (e) => {
@@ -134,8 +136,16 @@ const DetailModal = ({ entry, onClose }) => {
 
   if (!entry) return null;
 
+  const rawText = formatDetailRaw(entry.detail);
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose();
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(rawText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return html`
@@ -149,13 +159,22 @@ const DetailModal = ({ entry, onClose }) => {
               >${formatTime(entry.timestamp)}</span
             >
           </div>
-          <button className="activity-modal-close" onClick=${onClose}>
-            <i className="ph ph-x"></i>
-          </button>
+          <div className="activity-modal-header-actions">
+            <button
+              className="tool-modal-copy-btn"
+              onClick=${handleCopy}
+              title=${copied ? "Copied!" : "Copy raw content"}
+            >
+              <i className="ph ph-${copied ? "check" : "copy"}"></i>
+              ${copied &&
+              html`<span className="tool-modal-copy-tooltip">Copied!</span>`}
+            </button>
+            <button className="activity-modal-close" onClick=${onClose}>
+              <i className="ph ph-x"></i>
+            </button>
+          </div>
         </div>
-        <pre className="activity-modal-body">
-${formatDetailRaw(entry.detail)}</pre
-        >
+        <pre className="activity-modal-body">${rawText}</pre>
       </div>
     </div>
   `;
