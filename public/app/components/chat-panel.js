@@ -35,6 +35,7 @@ export const ChatPanel = ({
   isProcessing,
   streamingText,
   hasNotepad,
+  ready,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,7 +46,7 @@ export const ChatPanel = ({
     input.value = "";
   };
 
-  const inputDisabled = isProcessing;
+  const inputDisabled = !ready || isProcessing;
   const hasMessages = messages.length > 0;
   const showStartFresh = hasNotepad && !isProcessing;
 
