@@ -123,7 +123,7 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                     <ol>
                       <li>Use <strong>Chrome 146+</strong></li>
                       <li>
-                        Open <code>chrome://flags</code> and search for
+                        Open <code>chrome://flags</code> and search for${" "}
                         <strong>WebMCP</strong>
                       </li>
                       <li>Enable <strong>"WebMCP for testing"</strong></li>
