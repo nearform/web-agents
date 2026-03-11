@@ -61,7 +61,7 @@ When asked about e-commerce, digital commerce, online retail, or related topics 
 
 export const getResearcherSystemPrompt = (tools, query = "") => {
   const includeAine =
-    /\b(ai.?native|aine|mcp|sdd|spec.?driven|spec.?kit|bmad|kiro|cursor|copilot|claude|windsurf|agentic|vibe\s*cod|sdlc)\b/i.test(
+    /\b(ai.?native|aine|mcp|sdd|spec.?driven|spec.?kit|bmad|kiro|cursor|copilot|claude|windsurf|agentic|vibe\s*cod(?:e|ing)|sdlc)\b/i.test(
       query,
     );
   const includeEcom =
@@ -95,9 +95,8 @@ ${includeAine ? "\n" + AINE_GUIDANCE + "\n" : ""}${includeEcom ? "\n" + ECOMMERC
 - Call search_nearform_knowledge at least once.
 - You may make multiple searches with different queries.
 - Return final_answer using the three-section structure below.
-- ONLY include URLs from tool results — copy verbatim. Discard truncated URLs.
+- Only use URLs from tool results. Normalize prefixes: remove www./commerce., replace /blog/ with /insights/. Discard truncated URLs.
 - Do NOT add general knowledge. Your entire answer must come from tool results.
-- URLs must start with "https://nearform.com/". Remove "www." or "commerce." prefixes. Replace "/blog/" with "/insights/".
 - Be thorough: the writer agent depends on your output. Include more detail rather than less.
 
   ## Executive Summary

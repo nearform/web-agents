@@ -51,7 +51,23 @@ export const runResearcher = async ({
     if (!notepad) return "";
     const links = notepad.match(/\*\*\[.*?\]\(.*?\)\*\*/g) || [];
     if (links.length === 0) return notepad.slice(0, 500);
-    return "Already covered:\n" + links.join("\n");
+
+    const MAX_LINKS = 20;
+    const MAX_CHARS = 1000;
+    const limitedLinks = links.slice(0, MAX_LINKS);
+    let summary = "Already covered:\n" + limitedLinks.join("\n");
+
+    let truncated = false;
+    if (summary.length > MAX_CHARS) {
+      summary = summary.slice(0, MAX_CHARS);
+      truncated = true;
+    }
+
+    const omittedLinkCount = links.length - limitedLinks.length;
+    if (omittedLinkCount > 0 || truncated) {
+      summary += `\n… (${omittedLinkCount > 0 ? `${omittedLinkCount} more links` : "more content"} omitted)`;
+    }
+    return summary;
   };
 
   const contextSummary = summarizeExisting(existingContext);

@@ -41,7 +41,7 @@ export const ChatPanel = ({
     e.preventDefault();
     const input = e.currentTarget.elements.message;
     const text = input.value.trim();
-    if (!text || isProcessing) return;
+    if (!text || !ready || isProcessing) return;
     onSend(text);
     input.value = "";
   };

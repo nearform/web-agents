@@ -254,10 +254,11 @@ export const runCoordinator = async ({
   const maxRetries = config.agents.maxCoordinatorRetries ?? 1;
 
   emit("start", "Analyzing your request...");
+  const startTime = Date.now();
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await runCoordinatorPipeline({
+      const result = await runCoordinatorPipeline({
         userMessage,
         tools,
         onActivity,
@@ -268,6 +269,9 @@ export const runCoordinator = async ({
         emit,
         reportStatus,
       });
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      emit("system", `Total elapsed time: ${elapsed}s`);
+      return result;
     } catch (err) {
       if (attempt < maxRetries && err.message.includes("timed out")) {
         emit(
@@ -276,6 +280,8 @@ export const runCoordinator = async ({
         );
         continue;
       }
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      emit("system", `Total elapsed time: ${elapsed}s`);
       emit("error", `Pipeline failed: ${err.message}`);
       return `I wasn't able to complete the request. Error: ${err.message}`;
     }
