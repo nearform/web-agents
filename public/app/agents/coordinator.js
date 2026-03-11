@@ -82,12 +82,14 @@ async function runCoordinatorPipeline({
   let needsResearch = !existingNotepad;
   if (!needsResearch) {
     try {
+      const t0 = Date.now();
       const triage = await triageFollowUp(
         userMessage,
         existingNotepad,
         chatHistory,
         emit,
       );
+      debug.timing("triage", Date.now() - t0);
       needsResearch = triage.needsResearch;
       coordinatorContextInfo = triage.contextInfo || null;
       reportStatus("Coordinator", "active", coordinatorContextInfo);
@@ -102,6 +104,7 @@ async function runCoordinatorPipeline({
     emit("delegate", "Handing off to Researcher agent");
     reportStatus("Researcher", "active");
     try {
+      const t0 = Date.now();
       researchBrief = await runResearcher({
         query: userMessage,
         tools,
@@ -109,6 +112,7 @@ async function runCoordinatorPipeline({
         existingContext: existingNotepad,
         onContextUpdate: (info) => reportStatus("Researcher", "active", info),
       });
+      debug.timing("researcher", Date.now() - t0);
     } catch (err) {
       if (err.message.includes("timed out") && existingNotepad) {
         debug.warn(
@@ -156,10 +160,36 @@ async function runCoordinatorPipeline({
       }
     }
     reportStatus("Researcher", "done");
+    const urlMatches = researchBrief.match(/https?:\/\/\S+/g) || [];
+    const postMatches = researchBrief.match(/\*\*\[/g) || [];
     emit("received", {
-      summary: `Research complete (${researchBrief.length} chars)`,
+      summary: `Research complete: ${postMatches.length} posts, ${urlMatches.length} URLs (${researchBrief.length} chars)`,
       result: researchBrief,
     });
+    emit("prompt", {
+      summary: "Research brief passed to Writer",
+      prompt: researchBrief,
+      kind: "research-brief",
+    });
+
+    // Diagnostic: warn if prose URLs don't match the verified set
+    const verifiedMatch = researchBrief.match(/## Verified URLs\n[\s\S]*$/);
+    if (verifiedMatch) {
+      const verified = [
+        ...verifiedMatch[0].matchAll(/- (https?:\/\/\S+)/g),
+      ].map((m) => m[1]);
+      const proseUrls = [
+        ...researchBrief.matchAll(/\]\((https?:\/\/[^)]+)\)/g),
+      ].map((m) => m[1]);
+      const suspect = proseUrls.filter((u) => !verified.includes(u));
+      if (suspect.length > 0) {
+        debug.warn(
+          "Coordinator",
+          `${suspect.length} URL(s) not in verified set:`,
+          suspect,
+        );
+      }
+    }
   } else {
     debug("Coordinator", "Existing notepad present — skipping research");
     emit("received", "Skipping research — using existing notepad content");
@@ -170,6 +200,7 @@ async function runCoordinatorPipeline({
   emit("delegate", "Handing off to Writer agent");
   let writerAnswer;
   try {
+    const t0 = Date.now();
     writerAnswer = await runWriter({
       researchBrief: researchBrief || "",
       originalQuery: userMessage,
@@ -182,6 +213,7 @@ async function runCoordinatorPipeline({
       onNotepadStreamChunk,
       onAgentStatus: reportStatus,
     });
+    debug.timing("writer", Date.now() - t0);
   } catch (err) {
     if (err.message.includes("timed out")) {
       debug.warn(

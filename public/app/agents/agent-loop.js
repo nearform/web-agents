@@ -64,13 +64,26 @@ export const runAgentLoop = async ({
   const session = await createToolSession(systemPrompt, executableTools);
 
   try {
-    const result = await runToolLoop(session, userMessage, executableTools, {
-      emit,
-      agentName,
-      onContextUpdate,
-    });
+    const { text, validUrls } = await runToolLoop(
+      session,
+      userMessage,
+      executableTools,
+      {
+        emit,
+        agentName,
+        onContextUpdate,
+      },
+    );
     emit("done", `${agentName} finished`);
-    return result;
+
+    if (validUrls && validUrls.length > 0) {
+      return (
+        text +
+        "\n\n## Verified URLs\nOnly use URLs from this list:\n" +
+        validUrls.map((u) => `- ${u}`).join("\n")
+      );
+    }
+    return text;
   } finally {
     session.destroy();
   }

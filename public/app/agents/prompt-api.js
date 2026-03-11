@@ -95,10 +95,12 @@ export const createSession = async (systemPrompt) => {
     "Creating session, system prompt length:",
     systemPrompt.length,
   );
+  const t0 = Date.now();
   const session = await LanguageModel.create({
     ...PROMPT_OPTIONS,
     initialPrompts: [{ role: "system", content: systemPrompt }],
   });
+  debug.timing("createSession", Date.now() - t0);
   debug("prompt-api", "Session created, inputQuota:", session.inputQuota);
   return session;
 };
@@ -125,7 +127,9 @@ export const createToolSession = async (systemPrompt, tools = []) => {
     "tools:",
     tools.length,
   );
+  const t0 = Date.now();
   const session = await LanguageModel.create(opts);
+  debug.timing("createToolSession", Date.now() - t0);
   debug("prompt-api", "Tool session created, inputQuota:", session.inputQuota);
   return session;
 };
@@ -148,7 +152,9 @@ const withTimeout = (promise, ms) =>
 
 export const promptSession = async (session, message) => {
   debug("prompt-api", "Prompting, message length:", message.length);
+  const t0 = Date.now();
   const result = await session.prompt(message);
+  debug.timing("prompt", Date.now() - t0);
   logContextAfterPrompt(session, "prompt");
   debug("prompt-api", "Response length:", result.length);
   return result;
@@ -156,6 +162,7 @@ export const promptSession = async (session, message) => {
 
 export const promptSessionStreaming = async (session, message, onChunk) => {
   debug("prompt-api", "Streaming prompt, message length:", message.length);
+  const t0 = Date.now();
   const stream = session.promptStreaming(message);
   let result = "";
   const streamPromise = (async () => {
@@ -166,6 +173,7 @@ export const promptSessionStreaming = async (session, message, onChunk) => {
     return result;
   })();
   const final = await withTimeout(streamPromise, config.timeouts.promptMs);
+  debug.timing("streaming", Date.now() - t0);
   logContextAfterPrompt(session, "streaming");
   debug("prompt-api", "Streaming complete, length:", final.length);
   return final;
@@ -177,10 +185,12 @@ export const promptSessionConstrained = async (
   responseConstraint,
 ) => {
   debug("prompt-api", "Constrained prompt, message length:", message.length);
+  const t0 = Date.now();
   const result = await withTimeout(
     session.prompt(message, { responseConstraint }),
     config.timeouts.promptMs,
   );
+  debug.timing("constrained", Date.now() - t0);
   logContextAfterPrompt(session, "constrained");
   debug("prompt-api", "Constrained response length:", result.length);
   return result;
@@ -198,12 +208,26 @@ export const promptSessionConstrainedWithRetry = async (
   onRetry,
 ) => {
   try {
-    return await promptSessionConstrained(session, message, responseConstraint);
+    const t0 = Date.now();
+    const r = await promptSessionConstrained(
+      session,
+      message,
+      responseConstraint,
+    );
+    debug.timing("constrainedWithRetry:ok", Date.now() - t0);
+    return r;
   } catch (err) {
     if (!err.message.includes("timed out") || !shortenContext) throw err;
     debug.warn("prompt-api", "Prompt timed out, retrying with shorter context");
     const shorter = shortenContext(message);
     if (onRetry) onRetry(shorter);
-    return await promptSessionConstrained(session, shorter, responseConstraint);
+    const t0 = Date.now();
+    const r = await promptSessionConstrained(
+      session,
+      shorter,
+      responseConstraint,
+    );
+    debug.timing("constrainedWithRetry:retry", Date.now() - t0);
+    return r;
   }
 };

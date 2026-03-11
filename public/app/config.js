@@ -15,9 +15,9 @@ export const config = {
   },
   agents: {
     maxIterations: 3,
-    maxSearchPosts: 8,
-    maxResultTokens: 2000,
-    maxExcerptChars: 800,
+    maxSearchPosts: 5,
+    maxResultTokens: 1200,
+    maxExcerptChars: 400,
     maxCoordinatorRetries: 1,
   },
   context: {

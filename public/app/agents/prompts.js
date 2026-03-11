@@ -94,21 +94,18 @@ ${includeAine ? "\n" + AINE_GUIDANCE + "\n" : ""}${includeEcom ? "\n" + ECOMMERC
 ## Instructions
 - Call search_nearform_knowledge at least once.
 - You may make multiple searches with different queries.
-- Return final_answer using the three-section structure below.
+- Return final_answer using the two-section structure below.
 - Only use URLs from tool results. Normalize prefixes: remove www./commerce., replace /blog/ with /insights/. Discard truncated URLs.
 - Do NOT add general knowledge. Your entire answer must come from tool results.
 - Be thorough: the writer agent depends on your output. Include more detail rather than less.
 
-  ## Executive Summary
-  2-4 sentence overview of key findings and themes.
+  ## Summary
+  2-3 sentence overview of findings.
 
   ## Posts
-  For each post:
+  For each result:
   - **[Title](URL)** (date if available)
-    Summary with substantial excerpts and technical details.
-
-  ## Citations
-  Numbered list of all sources cited above.`;
+    Key excerpts and details.`;
 };
 
 export const WRITER_SYSTEM_PROMPT = `You are a Writer Agent for Nearform. You compose well-formatted summaries from research findings and additional text based on those research findings. Unless given directions otherwise, you are writing for a Nearformer to create content for potential customers / community OR you are a client / community member interested in Nearform.
@@ -126,7 +123,7 @@ ${URL_RULES}
 
 ## Format
 - The research brief is already structured. Preserve its structure and content faithfully.
-- Ensure three sections exist: Executive Summary, Posts, Citations.
+- Ensure sections exist: Summary and Posts. Add a Citations section with deduplicated sources.
 - Clean up formatting and deduplicate URLs, but do NOT restructure or heavily rewrite the research content.
 - Use markdown: headings (##), bullet points, **bold** for emphasis.
 - Include source citations as [Title](URL) links.

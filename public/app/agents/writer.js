@@ -137,12 +137,12 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
   if (hasResearch && existingNotepad) {
     contentPrompt = `Update the existing research notepad by integrating new research findings. The user's follow-up query tells you what additional information they're looking for — use it to decide how to integrate the new posts.
 
-Maintain the three-section structure (Executive Summary, Posts, Citations).
+Maintain the structure (Summary, Posts). Add a Citations section with deduplicated sources.
 - Add new posts to the Posts section.
-- Add new citations to the Citations section.
-- Update the Executive Summary to reflect the expanded scope, framing it around the follow-up query.
+- Update the Summary to reflect the expanded scope, framing it around the follow-up query.
 - Preserve existing content and the new research's original wording. Do not rewrite existing posts.
 - Deduplicate URLs across old and new content. Each URL must appear only once — keep each link where it's most relevant.
+- A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 User's follow-up query: ${originalQuery}
 
@@ -153,6 +153,7 @@ New research findings:
 ${researchBrief}`;
   } else if (hasResearch) {
     contentPrompt = `Format the research findings into a clean notepad. Preserve the researcher's structure and content faithfully. Clean up formatting and deduplicate URLs. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
+- A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
