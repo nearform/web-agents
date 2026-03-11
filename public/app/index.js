@@ -148,7 +148,10 @@ export const App = () => {
           onActivity,
           existingNotepad,
           chatHistory,
-          onStreamChunk: (chunk) => setStreamingText(chunk),
+          onStreamChunk: (chunk) => {
+            streamingTextRef.current = chunk;
+            setStreamingText(chunk);
+          },
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
           onAgentStatus,
           signal: controller.signal,
@@ -187,9 +190,6 @@ export const App = () => {
   );
 
   const streamingTextRef = React.useRef(null);
-  React.useEffect(() => {
-    streamingTextRef.current = streamingText;
-  }, [streamingText]);
 
   const handleStop = React.useCallback(() => {
     if (abortControllerRef.current) {

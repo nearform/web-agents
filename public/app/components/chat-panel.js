@@ -52,7 +52,6 @@ export const ChatPanel = ({
     input.value = "";
   };
 
-  const inputDisabled = !ready || isProcessing;
   const hasMessages = messages.length > 0;
   const showStartFresh = hasNotepad && !isProcessing && !stoppedState;
 
@@ -186,7 +185,7 @@ export const ChatPanel = ({
                 ? "Ask a follow-up question to build on the notepad, or start fresh..."
                 : "Ask about Nearform's AI articles, services..."}
             rows="2"
-            disabled=${inputDisabled && !stoppedState}
+            disabled=${!ready || (isProcessing && !stoppedState)}
             onKeyDown=${(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -201,6 +200,7 @@ export const ChatPanel = ({
                   className="chat-send-btn chat-stop-btn"
                   onClick=${onStop}
                   title="Stop processing"
+                  aria-label="Stop processing"
                 >
                   <i className="ph ph-stop-circle"></i>
                 </button>
@@ -208,10 +208,11 @@ export const ChatPanel = ({
             : html`
                 <button
                   type="submit"
-                  className="chat-send-btn ${inputDisabled && !stoppedState
+                  className="chat-send-btn ${!ready ||
+                  (isProcessing && !stoppedState)
                     ? "disabled"
                     : ""}"
-                  disabled=${inputDisabled && !stoppedState}
+                  disabled=${!ready || (isProcessing && !stoppedState)}
                 >
                   <i className="ph ph-paper-plane-tilt"></i>
                 </button>
