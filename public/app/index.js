@@ -272,15 +272,26 @@ export const App = () => {
       <footer className="footer ${bannerMinimized ? "footer--minimized" : ""}">
         ${bannerMinimized
           ? html`
-              <a
-                href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="banner-mini-pill"
-                title="Nearform Open Source"
-              >
-                NF
-              </a>
+              <div className="banner-mini">
+                <a
+                  href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="banner-mini-pill"
+                  aria-label="Nearform Open Source"
+                >
+                  NF
+                </a>
+                <button
+                  type="button"
+                  className="banner-restore-btn"
+                  onClick=${() => setBannerMinimized(false)}
+                  aria-label="Restore banner"
+                  title="Restore banner"
+                >
+                  <i className="ph ph-arrow-square-out"></i>
+                </button>
+              </div>
             `
           : html`
               <div className="banner-wrapper">
@@ -296,9 +307,11 @@ export const App = () => {
                   />
                 </a>
                 <button
+                  type="button"
                   className="banner-minimize-btn"
                   onClick=${() => setBannerMinimized(true)}
                   title="Minimize banner"
+                  aria-label="Minimize banner"
                 >
                   <i className="ph ph-minus"></i>
                 </button>

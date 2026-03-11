@@ -190,13 +190,18 @@ export const ActivityLog = ({ activities, collapsed, onToggle }) => {
 
   if (collapsed) {
     return html`
-      <div className="activity-panel panel-collapsed" onClick=${onToggle}>
+      <button
+        type="button"
+        className="activity-panel panel-collapsed"
+        onClick=${onToggle}
+        aria-label="Expand activity panel"
+      >
         <div className="panel-collapsed-inner">
           <i className="ph ph-activity"></i>
           <span className="panel-collapsed-label">Activity</span>
           <i className="ph ph-caret-right panel-collapsed-chevron"></i>
         </div>
-      </div>
+      </button>
     `;
   }
 
@@ -206,9 +211,11 @@ export const ActivityLog = ({ activities, collapsed, onToggle }) => {
         <i className="ph ph-activity"></i>
         <h2>Agent Activity</h2>
         <button
+          type="button"
           className="panel-toggle-btn"
           onClick=${onToggle}
           title="Collapse panel"
+          aria-label="Collapse activity panel"
         >
           <i className="ph ph-caret-left"></i>
         </button>

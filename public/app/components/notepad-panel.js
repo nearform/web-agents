@@ -32,13 +32,18 @@ export const NotepadPanel = ({
 
   if (collapsed) {
     return html`
-      <div className="notepad-panel panel-collapsed" onClick=${onToggle}>
+      <button
+        type="button"
+        className="notepad-panel panel-collapsed"
+        onClick=${onToggle}
+        aria-label="Expand notepad panel"
+      >
         <div className="panel-collapsed-inner">
           <i className="ph ph-notepad"></i>
           <span className="panel-collapsed-label">Notepad</span>
           <i className="ph ph-caret-right panel-collapsed-chevron"></i>
         </div>
-      </div>
+      </button>
     `;
   }
 
@@ -49,9 +54,11 @@ export const NotepadPanel = ({
           <i className="ph ph-notepad"></i>
           <h2>Research Notepad</h2>
           <button
+            type="button"
             className="panel-toggle-btn"
             onClick=${onToggle}
             title="Collapse panel"
+            aria-label="Collapse notepad panel"
           >
             <i className="ph ph-caret-left"></i>
           </button>

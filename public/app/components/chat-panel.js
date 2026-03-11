@@ -54,13 +54,18 @@ export const ChatPanel = ({
 
   if (collapsed) {
     return html`
-      <div className="chat-panel panel-collapsed" onClick=${onToggle}>
+      <button
+        type="button"
+        className="chat-panel panel-collapsed"
+        onClick=${onToggle}
+        aria-label="Expand chat panel"
+      >
         <div className="panel-collapsed-inner">
           <i className="ph ph-chat-circle-text"></i>
           <span className="panel-collapsed-label">Chat</span>
           <i className="ph ph-caret-right panel-collapsed-chevron"></i>
         </div>
-      </div>
+      </button>
     `;
   }
 
@@ -70,9 +75,11 @@ export const ChatPanel = ({
         <i className="ph ph-chat-circle-text"></i>
         <h2>Chat</h2>
         <button
+          type="button"
           className="panel-toggle-btn"
           onClick=${onToggle}
           title="Collapse panel"
+          aria-label="Collapse chat panel"
         >
           <i className="ph ph-caret-left"></i>
         </button>
