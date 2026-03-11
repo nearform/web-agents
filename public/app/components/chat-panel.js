@@ -176,45 +176,47 @@ export const ChatPanel = ({
         `}
       </div>
       <form className="chat-input-form" onSubmit=${handleSubmit}>
-        <textarea
-          name="message"
-          className="chat-input"
-          placeholder=${stoppedState
-            ? "Type a follow-up or new question..."
-            : hasNotepad
-              ? "Ask a follow-up question to build on the notepad, or start fresh..."
-              : "Ask about Nearform's AI articles, services..."}
-          rows="2"
-          disabled=${inputDisabled && !stoppedState}
-          onKeyDown=${(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              e.currentTarget.form.requestSubmit();
-            }
-          }}
-        ></textarea>
-        ${isProcessing
-          ? html`
-              <button
-                type="button"
-                className="chat-send-btn chat-stop-btn"
-                onClick=${onStop}
-                title="Stop processing"
-              >
-                <i className="ph ph-stop-circle"></i>
-              </button>
-            `
-          : html`
-              <button
-                type="submit"
-                className="chat-send-btn ${inputDisabled && !stoppedState
-                  ? "disabled"
-                  : ""}"
-                disabled=${inputDisabled && !stoppedState}
-              >
-                <i className="ph ph-paper-plane-tilt"></i>
-              </button>
-            `}
+        <div className="chat-input-wrapper">
+          <textarea
+            name="message"
+            className="chat-input"
+            placeholder=${stoppedState
+              ? "Type a follow-up or new question..."
+              : hasNotepad
+                ? "Ask a follow-up question to build on the notepad, or start fresh..."
+                : "Ask about Nearform's AI articles, services..."}
+            rows="2"
+            disabled=${inputDisabled && !stoppedState}
+            onKeyDown=${(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form.requestSubmit();
+              }
+            }}
+          ></textarea>
+          ${isProcessing
+            ? html`
+                <button
+                  type="button"
+                  className="chat-send-btn chat-stop-btn"
+                  onClick=${onStop}
+                  title="Stop processing"
+                >
+                  <i className="ph ph-stop-circle"></i>
+                </button>
+              `
+            : html`
+                <button
+                  type="submit"
+                  className="chat-send-btn ${inputDisabled && !stoppedState
+                    ? "disabled"
+                    : ""}"
+                  disabled=${inputDisabled && !stoppedState}
+                >
+                  <i className="ph ph-paper-plane-tilt"></i>
+                </button>
+              `}
+        </div>
       </form>
     </div>
   `;
