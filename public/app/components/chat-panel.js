@@ -36,6 +36,8 @@ export const ChatPanel = ({
   streamingText,
   hasNotepad,
   ready,
+  collapsed,
+  onToggle,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -50,11 +52,30 @@ export const ChatPanel = ({
   const hasMessages = messages.length > 0;
   const showStartFresh = hasNotepad && !isProcessing;
 
+  if (collapsed) {
+    return html`
+      <div className="chat-panel panel-collapsed" onClick=${onToggle}>
+        <div className="panel-collapsed-inner">
+          <i className="ph ph-chat-circle-text"></i>
+          <span className="panel-collapsed-label">Chat</span>
+          <i className="ph ph-caret-right panel-collapsed-chevron"></i>
+        </div>
+      </div>
+    `;
+  }
+
   return html`
     <div className="chat-panel">
       <div className="chat-header">
         <i className="ph ph-chat-circle-text"></i>
         <h2>Chat</h2>
+        <button
+          className="panel-toggle-btn"
+          onClick=${onToggle}
+          title="Collapse panel"
+        >
+          <i className="ph ph-caret-left"></i>
+        </button>
       </div>
       <div className="chat-messages">
         ${!hasMessages &&

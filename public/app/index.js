@@ -52,6 +52,12 @@ export const App = () => {
   );
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
+  const [collapsedPanels, setCollapsedPanels] = React.useState({
+    chat: false,
+    activity: false,
+    notepad: false,
+  });
+  const [bannerMinimized, setBannerMinimized] = React.useState(false);
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
@@ -166,6 +172,14 @@ export const App = () => {
     updateNotepad(content);
   }, []);
 
+  const togglePanel = React.useCallback((panel) => {
+    setCollapsedPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  }, []);
+
+  const workspaceCols = ["chat", "activity", "notepad"]
+    .map((p) => (collapsedPanels[p] ? "auto" : "1fr"))
+    .join(" ");
+
   return html`
     <div className="app-container">
       <header className="app-header">
@@ -214,7 +228,10 @@ export const App = () => {
         </p>
       </header>
 
-      <div className="workspace">
+      <div
+        className="workspace"
+        style=${{ gridTemplateColumns: workspaceCols }}
+      >
         <${ChatPanel}
           messages=${messages}
           onSend=${handleSend}
@@ -223,11 +240,19 @@ export const App = () => {
           streamingText=${streamingText}
           hasNotepad=${!!notepadContent}
           ready=${status === "Ready"}
+          collapsed=${collapsedPanels.chat}
+          onToggle=${() => togglePanel("chat")}
         />
-        <${ActivityLog} activities=${activities} />
+        <${ActivityLog}
+          activities=${activities}
+          collapsed=${collapsedPanels.activity}
+          onToggle=${() => togglePanel("activity")}
+        />
         <${NotepadPanel}
           content=${notepadContent}
           onUpdateContent=${handleUpdateNotepad}
+          collapsed=${collapsedPanels.notepad}
+          onToggle=${() => togglePanel("notepad")}
         />
       </div>
 
@@ -244,18 +269,41 @@ export const App = () => {
         />
       `}
 
-      <footer className="footer">
-        <a
-          href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
-            alt="Nearform Open Source"
-            className="nearform-banner"
-          />
-        </a>
+      <footer className="footer ${bannerMinimized ? "footer--minimized" : ""}">
+        ${bannerMinimized
+          ? html`
+              <a
+                href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="banner-mini-pill"
+                title="Nearform Open Source"
+              >
+                NF
+              </a>
+            `
+          : html`
+              <div className="banner-wrapper">
+                <a
+                  href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
+                    alt="Nearform Open Source"
+                    className="nearform-banner"
+                  />
+                </a>
+                <button
+                  className="banner-minimize-btn"
+                  onClick=${() => setBannerMinimized(true)}
+                  title="Minimize banner"
+                >
+                  <i className="ph ph-minus"></i>
+                </button>
+              </div>
+            `}
       </footer>
     </div>
   `;
