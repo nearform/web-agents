@@ -1,3 +1,4 @@
+/* global DOMException:false */
 import {
   promptSessionConstrainedWithRetry,
   checkContextBudget,
@@ -197,6 +198,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     emit = () => {},
     agentName = "agent",
     onContextUpdate,
+    signal,
   } = options;
 
   let effectiveMaxResultTokens = maxResultTokens;
@@ -212,6 +214,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
   const collectedUrls = new Set();
 
   for (let i = 0; i < maxIterations; i++) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     const iterStart = Date.now();
     // Check context budget before prompting
     const budget = checkContextBudget(session, currentMessage);

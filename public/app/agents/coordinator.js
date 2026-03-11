@@ -1,3 +1,4 @@
+/* global DOMException:false */
 import { runResearcher } from "./researcher.js";
 import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
@@ -73,6 +74,7 @@ async function runCoordinatorPipeline({
   onNotepadStreamChunk,
   emit,
   reportStatus,
+  signal,
 }) {
   // Coordinator's own context info (only from triage session)
   let coordinatorContextInfo = null;
@@ -99,6 +101,8 @@ async function runCoordinatorPipeline({
     }
   }
 
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
   if (needsResearch) {
     // No existing notepad — run the full research pipeline
     emit("delegate", "Handing off to Researcher agent");
@@ -111,6 +115,7 @@ async function runCoordinatorPipeline({
         onActivity,
         existingContext: existingNotepad,
         onContextUpdate: (info) => reportStatus("Researcher", "active", info),
+        signal,
       });
       debug.timing("researcher", Date.now() - t0);
     } catch (err) {
@@ -128,6 +133,7 @@ async function runCoordinatorPipeline({
             existingContext: truncateHalf(existingNotepad),
             onContextUpdate: (info) =>
               reportStatus("Researcher", "active", info),
+            signal,
           });
         } catch (retryErr) {
           reportStatus("Researcher", "error");
@@ -154,6 +160,7 @@ async function runCoordinatorPipeline({
           onActivity,
           existingContext: existingNotepad,
           onContextUpdate: (info) => reportStatus("Researcher", "active", info),
+          signal,
         });
       } catch (err) {
         emit("error", `Retry research failed: ${err.message}`);
@@ -196,6 +203,7 @@ async function runCoordinatorPipeline({
   }
 
   // Run writer
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const skipNotepadWrite = !needsResearch;
   emit("delegate", "Handing off to Writer agent");
   let writerAnswer;
@@ -212,6 +220,7 @@ async function runCoordinatorPipeline({
       onStreamChunk,
       onNotepadStreamChunk,
       onAgentStatus: reportStatus,
+      signal,
     });
     debug.timing("writer", Date.now() - t0);
   } catch (err) {
@@ -235,6 +244,7 @@ async function runCoordinatorPipeline({
           onStreamChunk,
           onNotepadStreamChunk,
           onAgentStatus: reportStatus,
+          signal,
         });
       } catch (retryErr) {
         reportStatus("Writer", "error");
@@ -278,6 +288,7 @@ export const runCoordinator = async ({
   onStreamChunk,
   onNotepadStreamChunk,
   onAgentStatus,
+  signal,
 }) => {
   const emit = createEmitter("Coordinator", onActivity);
   const reportStatus = (agentName, status, contextInfo) => {
@@ -300,11 +311,13 @@ export const runCoordinator = async ({
         onNotepadStreamChunk,
         emit,
         reportStatus,
+        signal,
       });
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       emit("system", `Total elapsed time: ${elapsed}s`);
       return result;
     } catch (err) {
+      if (err.name === "AbortError") throw err;
       if (attempt < maxRetries && err.message.includes("timed out")) {
         emit(
           "retry",

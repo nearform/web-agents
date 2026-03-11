@@ -38,6 +38,10 @@ export const ChatPanel = ({
   ready,
   collapsed,
   onToggle,
+  onStop,
+  stoppedState,
+  onStopContinue,
+  onStopNewQuery,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -50,7 +54,7 @@ export const ChatPanel = ({
 
   const inputDisabled = !ready || isProcessing;
   const hasMessages = messages.length > 0;
-  const showStartFresh = hasNotepad && !isProcessing;
+  const showStartFresh = hasNotepad && !isProcessing && !stoppedState;
 
   if (collapsed) {
     return html`
@@ -86,6 +90,7 @@ export const ChatPanel = ({
       </div>
       <div className="chat-messages">
         ${!hasMessages &&
+        !stoppedState &&
         html`
           <div className="chat-empty">
             Ask a question about Nearform's content to see the agents
@@ -121,6 +126,45 @@ export const ChatPanel = ({
             </div>
           </div>
         `}
+        ${stoppedState &&
+        html`
+          <div
+            className="chat-bubble chat-bubble--assistant chat-bubble--stopped"
+          >
+            <span className="chat-agent-label">
+              Coordinator
+              <span className="chat-stopped-label">Stopped</span>
+            </span>
+            ${stoppedState.partialText
+              ? html`<${ChatBubbleText}
+                  text=${stoppedState.partialText}
+                  isAssistant=${true}
+                />`
+              : html`<div className="chat-bubble-text chat-stopped-empty">
+                  Processing was stopped before a response was generated.
+                </div>`}
+          </div>
+          <div className="chat-stopped-options">
+            <button
+              className="chat-stopped-option-btn chat-stopped-option--continue"
+              onClick=${onStopContinue}
+            >
+              <i className="ph ph-play"></i> Continue
+            </button>
+            <button
+              className="chat-stopped-option-btn chat-stopped-option--new"
+              onClick=${onStopNewQuery}
+            >
+              <i className="ph ph-arrow-bend-up-left"></i> New query
+            </button>
+            <button
+              className="chat-stopped-option-btn chat-stopped-option--restart"
+              onClick=${onStartFresh}
+            >
+              <i className="ph ph-arrow-counter-clockwise"></i> Start fresh
+            </button>
+          </div>
+        `}
         ${showStartFresh &&
         html`
           <div className="chat-start-fresh">
@@ -135,11 +179,13 @@ export const ChatPanel = ({
         <textarea
           name="message"
           className="chat-input"
-          placeholder=${hasNotepad
-            ? "Ask a follow-up question to build on the notepad, or start fresh..."
-            : "Ask about Nearform's AI articles, services..."}
+          placeholder=${stoppedState
+            ? "Type a follow-up or new question..."
+            : hasNotepad
+              ? "Ask a follow-up question to build on the notepad, or start fresh..."
+              : "Ask about Nearform's AI articles, services..."}
           rows="2"
-          disabled=${inputDisabled}
+          disabled=${inputDisabled && !stoppedState}
           onKeyDown=${(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -147,13 +193,28 @@ export const ChatPanel = ({
             }
           }}
         ></textarea>
-        <button
-          type="submit"
-          className="chat-send-btn ${inputDisabled ? "disabled" : ""}"
-          disabled=${inputDisabled}
-        >
-          <i className="ph ph-paper-plane-tilt"></i>
-        </button>
+        ${isProcessing
+          ? html`
+              <button
+                type="button"
+                className="chat-send-btn chat-stop-btn"
+                onClick=${onStop}
+                title="Stop processing"
+              >
+                <i className="ph ph-stop-circle"></i>
+              </button>
+            `
+          : html`
+              <button
+                type="submit"
+                className="chat-send-btn ${inputDisabled && !stoppedState
+                  ? "disabled"
+                  : ""}"
+                disabled=${inputDisabled && !stoppedState}
+              >
+                <i className="ph ph-paper-plane-tilt"></i>
+              </button>
+            `}
       </form>
     </div>
   `;
