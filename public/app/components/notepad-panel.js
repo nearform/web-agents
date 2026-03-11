@@ -2,7 +2,12 @@ import React from "react";
 import { html } from "../util/html.js";
 import { renderMarkdown } from "../util/markdown.js";
 
-export const NotepadPanel = ({ content, onUpdateContent }) => {
+export const NotepadPanel = ({
+  content,
+  onUpdateContent,
+  collapsed,
+  onToggle,
+}) => {
   const [editing, setEditing] = React.useState(false);
   const [editText, setEditText] = React.useState(content);
 
@@ -25,12 +30,38 @@ export const NotepadPanel = ({ content, onUpdateContent }) => {
     setEditing(false);
   };
 
+  if (collapsed) {
+    return html`
+      <button
+        type="button"
+        className="notepad-panel panel-collapsed"
+        onClick=${onToggle}
+        aria-label="Expand notepad panel"
+      >
+        <div className="panel-collapsed-inner">
+          <i className="ph ph-notepad"></i>
+          <span className="panel-collapsed-label">Notepad</span>
+          <i className="ph ph-caret-right panel-collapsed-chevron"></i>
+        </div>
+      </button>
+    `;
+  }
+
   return html`
     <div className="notepad-panel">
       <div className="notepad-header">
         <div className="notepad-header-left">
           <i className="ph ph-notepad"></i>
           <h2>Research Notepad</h2>
+          <button
+            type="button"
+            className="panel-toggle-btn"
+            onClick=${onToggle}
+            title="Collapse panel"
+            aria-label="Collapse notepad panel"
+          >
+            <i className="ph ph-caret-left"></i>
+          </button>
         </div>
         ${content &&
         !editing &&

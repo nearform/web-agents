@@ -180,7 +180,7 @@ const DetailModal = ({ entry, onClose }) => {
   `;
 };
 
-export const ActivityLog = ({ activities }) => {
+export const ActivityLog = ({ activities, collapsed, onToggle }) => {
   const endRef = React.useRef(null);
   const [selectedEntry, setSelectedEntry] = React.useState(null);
 
@@ -188,11 +188,37 @@ export const ActivityLog = ({ activities }) => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activities.length]);
 
+  if (collapsed) {
+    return html`
+      <button
+        type="button"
+        className="activity-panel panel-collapsed"
+        onClick=${onToggle}
+        aria-label="Expand activity panel"
+      >
+        <div className="panel-collapsed-inner">
+          <i className="ph ph-activity"></i>
+          <span className="panel-collapsed-label">Activity</span>
+          <i className="ph ph-caret-right panel-collapsed-chevron"></i>
+        </div>
+      </button>
+    `;
+  }
+
   return html`
     <div className="activity-panel">
       <div className="activity-header">
         <i className="ph ph-activity"></i>
         <h2>Agent Activity</h2>
+        <button
+          type="button"
+          className="panel-toggle-btn"
+          onClick=${onToggle}
+          title="Collapse panel"
+          aria-label="Collapse activity panel"
+        >
+          <i className="ph ph-caret-left"></i>
+        </button>
       </div>
       <div className="activity-feed">
         ${activities.length === 0 &&
