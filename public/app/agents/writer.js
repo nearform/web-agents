@@ -135,20 +135,24 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
   let contentPrompt;
 
   if (hasResearch && existingNotepad) {
-    contentPrompt = `Update the existing research notepad by integrating new research findings in detail. Preserve existing content and add substantial new material — excerpts, technical details, and citations.
+    contentPrompt = `Update the existing research notepad by integrating new research findings. The user's follow-up query tells you what additional information they're looking for — use it to decide how to integrate the new posts.
+
+Maintain the three-section structure (Executive Summary, Posts, Citations).
+- Add new posts to the Posts section.
+- Add new citations to the Citations section.
+- Update the Executive Summary to reflect the expanded scope, framing it around the follow-up query.
+- Preserve existing content and the new research's original wording. Do not rewrite existing posts.
+- Deduplicate URLs across old and new content. Each URL must appear only once — keep each link where it's most relevant.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
-Original question: ${originalQuery}
+User's follow-up query: ${originalQuery}
 
-Existing notepad content to build upon:
+Existing notepad content:
 ${existingNotepad}
-
-Extend and integrate new findings into the existing content rather than replacing it.
-IMPORTANT: Each URL must appear only once in the entire notepad. When merging, deduplicate — keep each link where it's most relevant and remove duplicate citations.
 
 New research findings:
 ${researchBrief}`;
   } else if (hasResearch) {
-    contentPrompt = `Write a detailed, well-formatted markdown research document for the notepad. Include substantial content from the research findings — excerpts, technical details, and all relevant information. Do not over-summarize; the notepad is the user's primary reference. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
+    contentPrompt = `Format the research findings into a clean notepad. Preserve the researcher's structure and content faithfully. Clean up formatting and deduplicate URLs. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
