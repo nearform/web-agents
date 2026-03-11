@@ -46,12 +46,38 @@ export const runResearcher = async ({
     searchTools.map((t) => `${t.name} (${t.source}, connected=${t.connected})`),
   );
 
+  // Cap existingContext to titles/URLs only so it doesn't blow the context window
+  const summarizeExisting = (notepad) => {
+    if (!notepad) return "";
+    const links = notepad.match(/\*\*\[.*?\]\(.*?\)\*\*/g) || [];
+    if (links.length === 0) return notepad.slice(0, 500);
+
+    const MAX_LINKS = 20;
+    const MAX_CHARS = 1000;
+    const limitedLinks = links.slice(0, MAX_LINKS);
+    let summary = "Already covered:\n" + limitedLinks.join("\n");
+
+    let truncated = false;
+    if (summary.length > MAX_CHARS) {
+      summary = summary.slice(0, MAX_CHARS);
+      truncated = true;
+    }
+
+    const omittedLinkCount = links.length - limitedLinks.length;
+    if (omittedLinkCount > 0 || truncated) {
+      summary += `\n… (${omittedLinkCount > 0 ? `${omittedLinkCount} more links` : "more content"} omitted)`;
+    }
+    return summary;
+  };
+
+  const contextSummary = summarizeExisting(existingContext);
+
   // Each runAgentLoop call creates and destroys its own session,
   // so coordinator retries automatically get fresh sessions.
   const result = await runAgentLoop({
-    systemPrompt: getResearcherSystemPrompt(searchTools),
+    systemPrompt: getResearcherSystemPrompt(searchTools, query),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
-${existingContext ? `\nWe already have this content in the notepad:\n${existingContext}\n\nThe user wants to build on it. Only search for information that is genuinely MISSING from the existing notepad. Do not re-search topics already covered.\nIMPORTANT: The notepad above was built from earlier searches. When choosing categoryPrimary for follow-up searches, consider ALL categories relevant to both the existing content AND the new question — don't narrow to just the follow-up topic. If the original content was about "ai" topics, keep "ai" in your category filters even if the follow-up seems like a different sub-topic. When in doubt, omit categoryPrimary entirely to avoid filtering out relevant results.\n` : ""}
+${contextSummary ? `\n${contextSummary}\n\nThe user wants to build on it. Only search for information genuinely MISSING from the above. Do not re-search topics already covered. When in doubt, omit categoryPrimary to avoid filtering out relevant results.\n` : ""}
 User question: ${query}`,
     tools: searchTools,
     onActivity,

@@ -159,7 +159,10 @@ const halveToolResults = (message) => {
             const obj = JSON.parse(body);
             if (obj && Array.isArray(obj.posts) && obj.posts.length > 1) {
               const keep = Math.max(1, Math.ceil(obj.posts.length * 0.5));
-              obj.posts = obj.posts.slice(0, keep);
+              obj.posts = obj.posts.slice(0, keep).map((p) => ({
+                ...p,
+                excerpt: p.excerpt ? p.excerpt.slice(0, 200) : p.excerpt,
+              }));
               return open + JSON.stringify(obj) + close;
             }
           } catch {
@@ -206,8 +209,10 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
 
   let currentMessage = message;
   let lastResponse = "";
+  const collectedUrls = new Set();
 
   for (let i = 0; i < maxIterations; i++) {
+    const iterStart = Date.now();
     // Check context budget before prompting
     const budget = checkContextBudget(session, currentMessage);
 
@@ -298,6 +303,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       lastResponse = response.text || "";
       emit("response", lastResponse);
       debug(agentName, "Final answer received, ending loop");
+      debug.timing(`${agentName}:iter${i + 1}`, Date.now() - iterStart);
       break;
     }
 
@@ -326,7 +332,20 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
 
       let resultMessage;
       try {
+        const t0 = Date.now();
         const resultStr = await tool.execute(tc.args);
+        debug.timing(`tool:${tc.name}`, Date.now() - t0);
+        // Collect URLs from raw result before trimming
+        try {
+          const parsed = JSON.parse(resultStr);
+          if (parsed && Array.isArray(parsed.posts)) {
+            for (const post of parsed.posts) {
+              if (post.href) collectedUrls.add(post.href);
+            }
+          }
+        } catch {
+          /* not JSON with posts */
+        }
         const trimmed = trimResult(resultStr, effectiveMaxResultTokens);
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + trimmed);
         emit("tool-result", {
@@ -345,8 +364,9 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
         resultMessage +
         "\n\nUse ONLY the data above. Copy URLs exactly as shown — do not modify, complete, or invent any URL. If any value looks truncated, omit it. Continue based on these results.";
       lastResponse = response.text || "";
+      debug.timing(`${agentName}:iter${i + 1}`, Date.now() - iterStart);
     }
   }
 
-  return lastResponse;
+  return { text: lastResponse, validUrls: [...collectedUrls] };
 };

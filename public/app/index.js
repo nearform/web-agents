@@ -222,6 +222,7 @@ export const App = () => {
           isProcessing=${isProcessing}
           streamingText=${streamingText}
           hasNotepad=${!!notepadContent}
+          ready=${status === "Ready"}
         />
         <${ActivityLog} activities=${activities} />
         <${NotepadPanel}
