@@ -103,6 +103,14 @@ export const App = () => {
 
   const onAgentStatus = React.useCallback(
     (agentName, statusValue, contextInfo) => {
+      if (contextInfo?.pct != null) {
+        setPrevAgentStatuses((prev) => {
+          if (!prev) return null;
+          const next = { ...prev };
+          delete next[agentName];
+          return Object.keys(next).length > 0 ? next : null;
+        });
+      }
       setAgentStatuses((prev) => ({
         ...prev,
         [agentName]: {
