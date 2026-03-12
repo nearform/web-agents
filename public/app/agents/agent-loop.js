@@ -47,6 +47,7 @@ export const runAgentLoop = async ({
   onActivity,
   agentName,
   onContextUpdate,
+  signal,
 }) => {
   const emit = createEmitter(agentName, onActivity);
 
@@ -72,6 +73,7 @@ export const runAgentLoop = async ({
         emit,
         agentName,
         onContextUpdate,
+        signal,
       },
     );
     emit("done", `${agentName} finished`);

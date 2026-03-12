@@ -1,4 +1,4 @@
-/* global LanguageModel:false, setTimeout:false */
+/* global LanguageModel:false, setTimeout:false, DOMException:false */
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
 
@@ -160,16 +160,24 @@ export const promptSession = async (session, message) => {
   return result;
 };
 
-export const promptSessionStreaming = async (session, message, onChunk) => {
+export const promptSessionStreaming = async (
+  session,
+  message,
+  onChunk,
+  { signal } = {},
+) => {
   debug("prompt-api", "Streaming prompt, message length:", message.length);
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const t0 = Date.now();
   const stream = session.promptStreaming(message);
   let result = "";
   const streamPromise = (async () => {
     for await (const chunk of stream) {
+      if (signal?.aborted) break;
       result += chunk;
       if (onChunk) onChunk(result);
     }
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     return result;
   })();
   const final = await withTimeout(streamPromise, config.timeouts.promptMs);

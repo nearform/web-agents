@@ -1,3 +1,4 @@
+/* global DOMException:false */
 import {
   promptSessionConstrainedWithRetry,
   checkContextBudget,
@@ -197,6 +198,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     emit = () => {},
     agentName = "agent",
     onContextUpdate,
+    signal,
   } = options;
 
   let effectiveMaxResultTokens = maxResultTokens;
@@ -212,6 +214,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
   const collectedUrls = new Set();
 
   for (let i = 0; i < maxIterations; i++) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     const iterStart = Date.now();
     // Check context budget before prompting
     const budget = checkContextBudget(session, currentMessage);
@@ -270,6 +273,8 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       emit("error", `Prompt failed: ${err.message}`);
       throw err;
     }
+
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
     debug(agentName, `=== RAW OUTPUT (iteration ${i + 1}) ===\n` + raw);
 
@@ -330,6 +335,8 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
         continue;
       }
 
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
       let resultMessage;
       try {
         const t0 = Date.now();
@@ -353,7 +360,9 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
           result: resultStr,
         });
         resultMessage = formatToolResult(tc.name, trimmed);
+        if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
       } catch (err) {
+        if (err.name === "AbortError") throw err;
         debug(agentName, `=== TOOL ERROR: ${tc.name} ===\n` + err.message);
         emit("tool-error", { name: tc.name, error: err.message });
         resultMessage = formatToolResult(tc.name, { error: err.message });

@@ -4,7 +4,7 @@ import React from "react";
 
 const AGENTS = ["Coordinator", "Researcher", "Writer"];
 
-const AgentDetailModal = ({ agent, status, onClose }) => {
+const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
   const [copied, setCopied] = React.useState(false);
 
   if (!agent) return null;
@@ -14,12 +14,19 @@ const AgentDetailModal = ({ agent, status, onClose }) => {
       ? `Context: ${status.contextUsed} / ${status.contextTotal} tokens (${status.contextPct}%)\nAvailable: ${status.contextTotal - status.contextUsed} tokens\nStatus: ${status.status}`
       : `Status: ${status.status}\nNo context data available`;
 
+  const prevText =
+    prevStatus?.contextPct != null
+      ? `\n\nPrevious run:\nContext: ${prevStatus.contextUsed} / ${prevStatus.contextTotal} tokens (${prevStatus.contextPct}%)\nStatus: ${prevStatus.status}`
+      : "";
+
+  const fullText = rawText + prevText;
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(rawText);
+    await navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -47,13 +54,17 @@ const AgentDetailModal = ({ agent, status, onClose }) => {
             </button>
           </div>
         </div>
-        <div className="activity-modal-body">${rawText}</div>
+        <div className="activity-modal-body">
+          ${rawText}
+          ${prevText &&
+          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}
+        </div>
       </div>
     </div>
   `;
 };
 
-export const AgentStatus = ({ statuses }) => {
+export const AgentStatus = ({ statuses, prevStatuses }) => {
   const [selectedAgent, setSelectedAgent] = React.useState(null);
 
   return html`
@@ -63,6 +74,7 @@ export const AgentStatus = ({ statuses }) => {
       </span>
       ${AGENTS.map((name) => {
         const s = statuses[name] || { status: "idle" };
+        const prev = prevStatuses?.[name];
         return html`
           <span
             key=${name}
@@ -78,6 +90,12 @@ export const AgentStatus = ({ statuses }) => {
             <span className="tool-status-name">${name}</span>
             ${s.contextPct != null &&
             html`<span className="agent-context-badge">${s.contextPct}%</span>`}
+            ${prev?.contextPct != null &&
+            html`<span
+              className="agent-context-badge agent-context-badge--prev"
+              title="Previous run"
+              >${prev.contextPct}%</span
+            >`}
           </span>
         `;
       })}
@@ -85,6 +103,7 @@ export const AgentStatus = ({ statuses }) => {
     <${AgentDetailModal}
       agent=${selectedAgent}
       status=${statuses[selectedAgent] || { status: "idle" }}
+      prevStatus=${prevStatuses?.[selectedAgent]}
       onClose=${() => setSelectedAgent(null)}
     />
   `;

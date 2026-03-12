@@ -12,7 +12,6 @@ export const URL_RULES = `- ONLY use facts and URLs from the research findings p
 - Cite sources as markdown links. The format is EXACTLY: [Title](URL) — the ] must come BEFORE the (.
   CORRECT: [My Article](https://nearform.com/insights/my-article)
   WRONG:   [My Article (https://nearform.com/insights/my-article)]
-- If a date is available, put it AFTER the link, not inside it: [Title](URL) (2025-01-15)
 - DEDUPLICATION: Each URL may appear AT MOST ONCE in your entire output. If you have already cited a URL, do NOT cite it again — even in a different section or with different anchor text. Multiple distinct URLs are great; repeating the same URL is not.
 - URLs must begin with "https://nearform.com/". Remove "www." or "commerce." prefixes.
 - Replace "/blog/" with "/insights/" in any URLs.`;
@@ -104,7 +103,7 @@ ${includeAine ? "\n" + AINE_GUIDANCE + "\n" : ""}${includeEcom ? "\n" + ECOMMERC
 
   ## Posts
   For each result:
-  - **[Title](URL)** (date if available)
+  - **[Title](URL)**
     Key excerpts and details.`;
 };
 

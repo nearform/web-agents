@@ -1,3 +1,4 @@
+/* global DOMException:false */
 import {
   createSession,
   promptSessionStreaming,
@@ -39,6 +40,7 @@ export const runWriter = async ({
   onStreamChunk,
   onNotepadStreamChunk,
   onAgentStatus,
+  signal,
 }) => {
   const emit = createEmitter("Writer", onActivity);
   const reportContext = () => {
@@ -63,11 +65,15 @@ export const runWriter = async ({
   reportStatus("active");
 
   const tryStreaming = async (prompt, onChunk, label) => {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     try {
-      const result = await promptSessionStreaming(session, prompt, onChunk);
+      const result = await promptSessionStreaming(session, prompt, onChunk, {
+        signal,
+      });
       reportContext();
       return result;
     } catch (err) {
+      if (err.name === "AbortError") throw err;
       if (!err.message.includes("timed out")) throw err;
       debug.warn("Writer", `${label} timed out, retrying with truncated input`);
       emit("retry", `${label} timed out — retrying with shorter context`);
@@ -117,6 +123,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
         session,
         retryPrompt,
         onStreamChunk,
+        { signal },
       );
     }
 
@@ -193,6 +200,7 @@ User request: ${originalQuery}`;
       session,
       retryPrompt,
       onNotepadStreamChunk,
+      { signal },
     );
   }
 
@@ -206,10 +214,12 @@ User request: ${originalQuery}`;
   // Generate chat reply
   const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Each URL must appear only once — never repeat the same link. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
   emit("prompt", { summary: "Composing chat reply", prompt: chatReplyPrompt });
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const chatReply = await promptSessionStreaming(
     session,
     chatReplyPrompt,
     onStreamChunk,
+    { signal },
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
 

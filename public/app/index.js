@@ -1,3 +1,4 @@
+/* global AbortController:false */
 import React from "react";
 import { html } from "./util/html.js";
 import { ChatPanel } from "./components/chat-panel.js";
@@ -50,6 +51,7 @@ export const App = () => {
   const [agentStatuses, setAgentStatuses] = React.useState(
     INITIAL_AGENT_STATUSES,
   );
+  const [prevAgentStatuses, setPrevAgentStatuses] = React.useState(null);
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
   const [collapsedPanels, setCollapsedPanels] = React.useState({
@@ -58,6 +60,8 @@ export const App = () => {
     notepad: false,
   });
   const [bannerMinimized, setBannerMinimized] = React.useState(false);
+  const abortControllerRef = React.useRef(null);
+  const [stoppedState, setStoppedState] = React.useState(null);
 
   React.useEffect(() => {
     setNotepadCallback(setNotepadContent);
@@ -99,6 +103,14 @@ export const App = () => {
 
   const onAgentStatus = React.useCallback(
     (agentName, statusValue, contextInfo) => {
+      if (contextInfo?.pct != null) {
+        setPrevAgentStatuses((prev) => {
+          if (!prev) return null;
+          const next = { ...prev };
+          delete next[agentName];
+          return Object.keys(next).length > 0 ? next : null;
+        });
+      }
       setAgentStatuses((prev) => ({
         ...prev,
         [agentName]: {
@@ -116,9 +128,18 @@ export const App = () => {
 
   const executeCoordinator = React.useCallback(
     async (text, existingNotepad, chatHistory) => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       setIsProcessing(true);
       setStreamingText(null);
-      setAgentStatuses(INITIAL_AGENT_STATUSES);
+      setStoppedState(null);
+      setAgentStatuses((current) => {
+        const hasActivity = Object.values(current).some(
+          (s) => s.status !== "idle",
+        );
+        if (hasActivity) setPrevAgentStatuses(current);
+        return INITIAL_AGENT_STATUSES;
+      });
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -127,14 +148,22 @@ export const App = () => {
           onActivity,
           existingNotepad,
           chatHistory,
-          onStreamChunk: (chunk) => setStreamingText(chunk),
+          onStreamChunk: (chunk) => {
+            streamingTextRef.current = chunk;
+            setStreamingText(chunk);
+          },
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
           onAgentStatus,
+          signal: controller.signal,
         });
 
         setStreamingText(null);
         setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
       } catch (err) {
+        if (err.name === "AbortError") {
+          // Handled by handleStop — don't append error message
+          return;
+        }
         setStreamingText(null);
         setMessages((prev) => [
           ...prev,
@@ -144,6 +173,7 @@ export const App = () => {
           },
         ]);
       } finally {
+        abortControllerRef.current = null;
         setIsProcessing(false);
         setTools(listTools());
       }
@@ -159,11 +189,39 @@ export const App = () => {
     [notepadContent, executeCoordinator],
   );
 
+  const streamingTextRef = React.useRef(null);
+
+  const handleStop = React.useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setStoppedState({ partialText: streamingTextRef.current });
+    setStreamingText(null);
+    setIsProcessing(false);
+  }, []);
+
+  const handleStopContinue = React.useCallback(() => {
+    const partial = stoppedState?.partialText;
+    if (partial) {
+      setMessages((prev) => [...prev, { role: "assistant", text: partial }]);
+    }
+    setStoppedState(null);
+  }, [stoppedState]);
+
+  const handleStopNewQuery = React.useCallback(() => {
+    setStoppedState(null);
+    setStreamingText(null);
+  }, []);
+
   const handleStartFresh = React.useCallback(() => {
     setMessages([]);
     setActivities([]);
     setNotepadContent("");
     setAgentStatuses(INITIAL_AGENT_STATUSES);
+    setPrevAgentStatuses(null);
+    setStoppedState(null);
+    setStreamingText(null);
     updateNotepad("");
   }, []);
 
@@ -242,6 +300,10 @@ export const App = () => {
           ready=${status === "Ready"}
           collapsed=${collapsedPanels.chat}
           onToggle=${() => togglePanel("chat")}
+          onStop=${handleStop}
+          stoppedState=${stoppedState}
+          onStopContinue=${handleStopContinue}
+          onStopNewQuery=${handleStopNewQuery}
         />
         <${ActivityLog}
           activities=${activities}
@@ -257,7 +319,10 @@ export const App = () => {
       </div>
 
       <div className="status-bars">
-        <${AgentStatus} statuses=${agentStatuses} />
+        <${AgentStatus}
+          statuses=${agentStatuses}
+          prevStatuses=${prevAgentStatuses}
+        />
         <${ToolStatus} tools=${tools} />
       </div>
 
