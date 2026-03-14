@@ -209,7 +209,7 @@ export const App = () => {
       setMessages((prev) => [...prev, { role: "user", text }]);
       executeCoordinator(text, notepadContent || undefined, messages);
     },
-    [notepadContent, executeCoordinator],
+    [notepadContent, executeCoordinator, messages],
   );
 
   const streamingTextRef = React.useRef(null);
