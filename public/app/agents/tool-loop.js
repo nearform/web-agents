@@ -279,6 +279,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
     debug(agentName, `=== RAW OUTPUT (iteration ${i + 1}) ===\n` + raw);
+    if (onAgentPrompt) onAgentPrompt(agentName, "answer", raw);
 
     let response;
     try {

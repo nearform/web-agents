@@ -53,9 +53,24 @@ export const App = () => {
   );
   const [prevAgentStatuses, setPrevAgentStatuses] = React.useState(null);
   const [agentPrompts, setAgentPrompts] = React.useState({
-    Coordinator: { systemPrompt: null, lastUserPrompt: null },
-    Researcher: { systemPrompt: null, lastUserPrompt: null },
-    Writer: { systemPrompt: null, lastUserPrompt: null },
+    Coordinator: {
+      systemPrompt: null,
+      lastUserPrompt: null,
+      lastAnswer: null,
+      history: [],
+    },
+    Researcher: {
+      systemPrompt: null,
+      lastUserPrompt: null,
+      lastAnswer: null,
+      history: [],
+    },
+    Writer: {
+      systemPrompt: null,
+      lastUserPrompt: null,
+      lastAnswer: null,
+      history: [],
+    },
   });
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
@@ -107,15 +122,43 @@ export const App = () => {
   }, []);
 
   const onAgentPrompt = React.useCallback((agentName, kind, promptText) => {
-    setAgentPrompts((prev) => ({
-      ...prev,
-      [agentName]: {
-        ...prev[agentName],
-        ...(kind === "system"
-          ? { systemPrompt: promptText }
-          : { lastUserPrompt: promptText }),
-      },
-    }));
+    setAgentPrompts((prev) => {
+      const agent = prev[agentName] || {
+        systemPrompt: null,
+        lastUserPrompt: null,
+        lastAnswer: null,
+        history: [],
+      };
+      const timestamp = new Date().toLocaleTimeString();
+      if (kind === "system") {
+        return { ...prev, [agentName]: { ...agent, systemPrompt: promptText } };
+      }
+      if (kind === "answer") {
+        return {
+          ...prev,
+          [agentName]: {
+            ...agent,
+            lastAnswer: promptText,
+            history: [
+              ...agent.history,
+              { role: "answer", text: promptText, timestamp },
+            ],
+          },
+        };
+      }
+      // kind === "user"
+      return {
+        ...prev,
+        [agentName]: {
+          ...agent,
+          lastUserPrompt: promptText,
+          history: [
+            ...agent.history,
+            { role: "user", text: promptText, timestamp },
+          ],
+        },
+      };
+    });
   }, []);
 
   const onAgentStatus = React.useCallback(
@@ -158,9 +201,24 @@ export const App = () => {
         return INITIAL_AGENT_STATUSES;
       });
       setAgentPrompts({
-        Coordinator: { systemPrompt: null, lastUserPrompt: null },
-        Researcher: { systemPrompt: null, lastUserPrompt: null },
-        Writer: { systemPrompt: null, lastUserPrompt: null },
+        Coordinator: {
+          systemPrompt: null,
+          lastUserPrompt: null,
+          lastAnswer: null,
+          history: [],
+        },
+        Researcher: {
+          systemPrompt: null,
+          lastUserPrompt: null,
+          lastAnswer: null,
+          history: [],
+        },
+        Writer: {
+          systemPrompt: null,
+          lastUserPrompt: null,
+          lastAnswer: null,
+          history: [],
+        },
       });
       try {
         const currentTools = listTools();
@@ -244,9 +302,24 @@ export const App = () => {
     setAgentStatuses(INITIAL_AGENT_STATUSES);
     setPrevAgentStatuses(null);
     setAgentPrompts({
-      Coordinator: { systemPrompt: null, lastUserPrompt: null },
-      Researcher: { systemPrompt: null, lastUserPrompt: null },
-      Writer: { systemPrompt: null, lastUserPrompt: null },
+      Coordinator: {
+        systemPrompt: null,
+        lastUserPrompt: null,
+        lastAnswer: null,
+        history: [],
+      },
+      Researcher: {
+        systemPrompt: null,
+        lastUserPrompt: null,
+        lastAnswer: null,
+        history: [],
+      },
+      Writer: {
+        systemPrompt: null,
+        lastUserPrompt: null,
+        lastAnswer: null,
+        history: [],
+      },
     });
     setStoppedState(null);
     setStreamingText(null);

@@ -111,6 +111,12 @@ async function triageFollowUp(
     const raw = await promptSessionConstrained(session, prompt, TRIAGE_SCHEMA);
     const contextInfo = getContextInfo(session);
     const parsed = JSON.parse(raw);
+    if (onAgentPrompt)
+      onAgentPrompt(
+        "Coordinator",
+        "answer",
+        `Triage: needs_research = ${parsed.needs_research}`,
+      );
     return { needsResearch: parsed.needs_research === true, contextInfo };
   } finally {
     session.destroy();

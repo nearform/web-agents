@@ -822,6 +822,7 @@ body {
 /* Agent Modal Tabs */
 .agent-modal-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   border-bottom: 1px solid var(--color-border);
   padding: 0 16px;
@@ -831,7 +832,7 @@ body {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 8px 12px;
+  padding: 8px 10px;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -860,6 +861,97 @@ body {
   opacity: 0.55;
   font-style: italic;
   white-space: pre-wrap;
+}
+
+/* Accordion History */
+.agent-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-size: 0.8rem;
+}
+
+.agent-history-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.agent-history-header:hover {
+  background: var(--color-surface);
+}
+
+.agent-history-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.agent-history-chevron.open {
+  transform: rotate(90deg);
+}
+
+.agent-history-role {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.agent-history-user .agent-history-role {
+  color: var(--color-accent-dark);
+  background: rgba(0, 229, 164, 0.1);
+}
+
+.agent-history-answer .agent-history-role {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.agent-history-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.agent-history-time {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.agent-history-preview {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.agent-history-body {
+  max-height: 400px;
+  overflow-y: auto;
+  border-left: 2px solid var(--color-accent);
+  margin-left: 18px;
+  padding: 4px 0 4px 10px;
+}
+
+.agent-history-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 /* Collapsible Panels */

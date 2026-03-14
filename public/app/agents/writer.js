@@ -134,6 +134,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
     }
 
     debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+    if (onAgentPrompt) onAgentPrompt("Writer", "answer", chatReply);
 
     session.destroy();
     reportStatus("done");
@@ -214,6 +215,7 @@ User request: ${originalQuery}`;
   }
 
   debug("Writer", "=== NOTEPAD CONTENT ===\n" + notepadContent);
+  if (onAgentPrompt) onAgentPrompt("Writer", "answer", notepadContent);
 
   // Write to notepad
   emit("tool-call", { name: "take_notes", args: {} });
@@ -232,6 +234,7 @@ User request: ${originalQuery}`;
     { signal },
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+  if (onAgentPrompt) onAgentPrompt("Writer", "answer", chatReply);
 
   session.destroy();
   reportStatus("done");
