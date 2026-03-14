@@ -156,6 +156,7 @@ Maintain the structure (Summary, Posts). Add a Citations section with deduplicat
 - Preserve existing content and the new research's original wording. Do not rewrite existing posts.
 - Deduplicate URLs across old and new content. Each URL must appear only once — keep each link where it's most relevant.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
+- Do NOT include the "Verified URLs" section in your output — it is internal only.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 User's follow-up query: ${originalQuery}
 
@@ -167,6 +168,7 @@ ${researchBrief}`;
   } else if (hasResearch) {
     contentPrompt = `Format the research findings into a clean notepad. Preserve the researcher's structure and content faithfully. Clean up formatting and deduplicate URLs. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
+- Do NOT include the "Verified URLs" section in your output — it is internal only.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
