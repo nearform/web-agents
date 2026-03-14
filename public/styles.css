@@ -819,6 +819,40 @@ body {
   font-style: italic;
 }
 
+/* Agent Modal Tabs */
+.agent-modal-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 16px;
+}
+
+.agent-modal-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.agent-modal-tab:hover {
+  color: var(--color-text);
+}
+
+.agent-modal-tab.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.agent-modal-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 24px 0;
+  text-align: center;
+}
+
 .agent-detail-prev {
   margin-top: 12px;
   padding-top: 10px;

@@ -4,12 +4,18 @@ import React from "react";
 
 const AGENTS = ["Coordinator", "Researcher", "Writer"];
 
-const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
+const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
   const [copied, setCopied] = React.useState(false);
+  const [tab, setTab] = React.useState("context");
+
+  // Reset tab when agent changes
+  React.useEffect(() => {
+    setTab("context");
+  }, [agent]);
 
   if (!agent) return null;
 
-  const rawText =
+  const contextText =
     status.contextPct != null
       ? `Context: ${status.contextUsed} / ${status.contextTotal} tokens (${status.contextPct}%)\nAvailable: ${status.contextTotal - status.contextUsed} tokens\nStatus: ${status.status}`
       : `Status: ${status.status}\nNo context data available`;
@@ -19,14 +25,20 @@ const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
       ? `\n\nPrevious run:\nContext: ${prevStatus.contextUsed} / ${prevStatus.contextTotal} tokens (${prevStatus.contextPct}%)\nStatus: ${prevStatus.status}`
       : "";
 
-  const fullText = rawText + prevText;
+  const getTabContent = () => {
+    if (tab === "system") return prompts?.systemPrompt || null;
+    if (tab === "user") return prompts?.lastUserPrompt || null;
+    return contextText + prevText;
+  };
+
+  const tabContent = getTabContent();
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(fullText);
+    await navigator.clipboard.writeText(tabContent || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -54,17 +66,50 @@ const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
             </button>
           </div>
         </div>
+        <div className="agent-modal-tabs">
+          <button
+            className="agent-modal-tab ${tab === "context" ? "active" : ""}"
+            onClick=${() => setTab("context")}
+          >
+            Context
+          </button>
+          <button
+            className="agent-modal-tab ${tab === "system" ? "active" : ""}"
+            onClick=${() => setTab("system")}
+          >
+            System Prompt
+          </button>
+          <button
+            className="agent-modal-tab ${tab === "user" ? "active" : ""}"
+            onClick=${() => setTab("user")}
+          >
+            Last Prompt
+          </button>
+        </div>
         <div className="activity-modal-body">
-          ${rawText}
+          ${tab === "context" &&
+          html`${contextText}
           ${prevText &&
-          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}
+          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}`}
+          ${tab === "system" &&
+          (prompts?.systemPrompt
+            ? html`${prompts.systemPrompt}`
+            : html`<div className="agent-modal-empty">
+                No prompt captured yet
+              </div>`)}
+          ${tab === "user" &&
+          (prompts?.lastUserPrompt
+            ? html`${prompts.lastUserPrompt}`
+            : html`<div className="agent-modal-empty">
+                No prompt captured yet
+              </div>`)}
         </div>
       </div>
     </div>
   `;
 };
 
-export const AgentStatus = ({ statuses, prevStatuses }) => {
+export const AgentStatus = ({ statuses, prevStatuses, prompts }) => {
   const [selectedAgent, setSelectedAgent] = React.useState(null);
 
   return html`
@@ -104,6 +149,7 @@ export const AgentStatus = ({ statuses, prevStatuses }) => {
       agent=${selectedAgent}
       status=${statuses[selectedAgent] || { status: "idle" }}
       prevStatus=${prevStatuses?.[selectedAgent]}
+      prompts=${prompts?.[selectedAgent]}
       onClose=${() => setSelectedAgent(null)}
     />
   `;

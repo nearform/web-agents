@@ -52,6 +52,11 @@ export const App = () => {
     INITIAL_AGENT_STATUSES,
   );
   const [prevAgentStatuses, setPrevAgentStatuses] = React.useState(null);
+  const [agentPrompts, setAgentPrompts] = React.useState({
+    Coordinator: { systemPrompt: null, lastUserPrompt: null },
+    Researcher: { systemPrompt: null, lastUserPrompt: null },
+    Writer: { systemPrompt: null, lastUserPrompt: null },
+  });
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
   const [collapsedPanels, setCollapsedPanels] = React.useState({
@@ -101,6 +106,18 @@ export const App = () => {
     setActivities((prev) => [...prev, event]);
   }, []);
 
+  const onAgentPrompt = React.useCallback((agentName, kind, promptText) => {
+    setAgentPrompts((prev) => ({
+      ...prev,
+      [agentName]: {
+        ...prev[agentName],
+        ...(kind === "system"
+          ? { systemPrompt: promptText }
+          : { lastUserPrompt: promptText }),
+      },
+    }));
+  }, []);
+
   const onAgentStatus = React.useCallback(
     (agentName, statusValue, contextInfo) => {
       if (contextInfo?.pct != null) {
@@ -140,6 +157,11 @@ export const App = () => {
         if (hasActivity) setPrevAgentStatuses(current);
         return INITIAL_AGENT_STATUSES;
       });
+      setAgentPrompts({
+        Coordinator: { systemPrompt: null, lastUserPrompt: null },
+        Researcher: { systemPrompt: null, lastUserPrompt: null },
+        Writer: { systemPrompt: null, lastUserPrompt: null },
+      });
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -154,6 +176,7 @@ export const App = () => {
           },
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
           onAgentStatus,
+          onAgentPrompt,
           signal: controller.signal,
         });
 
@@ -178,7 +201,7 @@ export const App = () => {
         setTools(listTools());
       }
     },
-    [onActivity, onAgentStatus],
+    [onActivity, onAgentStatus, onAgentPrompt],
   );
 
   const handleSend = React.useCallback(
@@ -220,6 +243,11 @@ export const App = () => {
     setNotepadContent("");
     setAgentStatuses(INITIAL_AGENT_STATUSES);
     setPrevAgentStatuses(null);
+    setAgentPrompts({
+      Coordinator: { systemPrompt: null, lastUserPrompt: null },
+      Researcher: { systemPrompt: null, lastUserPrompt: null },
+      Writer: { systemPrompt: null, lastUserPrompt: null },
+    });
     setStoppedState(null);
     setStreamingText(null);
     updateNotepad("");
@@ -322,6 +350,7 @@ export const App = () => {
         <${AgentStatus}
           statuses=${agentStatuses}
           prevStatuses=${prevAgentStatuses}
+          prompts=${agentPrompts}
         />
         <${ToolStatus} tools=${tools} />
       </div>

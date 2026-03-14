@@ -85,13 +85,22 @@ const extractNotepadOutline = (notepad, budget = 1500) => {
   return outline.slice(0, end) + "\n...";
 };
 
-async function triageFollowUp(userMessage, existingNotepad, chatHistory, emit) {
-  const session = await createSession(getTriageSystemPrompt(userMessage));
+async function triageFollowUp(
+  userMessage,
+  existingNotepad,
+  chatHistory,
+  emit,
+  onAgentPrompt,
+) {
+  const triageSystemPrompt = getTriageSystemPrompt(userMessage);
+  if (onAgentPrompt) onAgentPrompt("Coordinator", "system", triageSystemPrompt);
+  const session = await createSession(triageSystemPrompt);
   try {
     const history = formatChatHistory(chatHistory);
     const outline =
       extractNotepadOutline(existingNotepad) || existingNotepad.slice(0, 1500);
     const prompt = `Existing notepad outline:\n${outline}${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
+    if (onAgentPrompt) onAgentPrompt("Coordinator", "user", prompt);
     if (emit) {
       emit("prompt", {
         summary: "Triage: deciding if research needed",
@@ -122,6 +131,7 @@ async function runCoordinatorPipeline({
   onNotepadStreamChunk,
   emit,
   reportStatus,
+  onAgentPrompt,
   signal,
 }) {
   // Coordinator's own context info (only from triage session)
@@ -138,6 +148,7 @@ async function runCoordinatorPipeline({
         existingNotepad,
         chatHistory,
         emit,
+        onAgentPrompt,
       );
       debug.timing("triage", Date.now() - t0);
       needsResearch = triage.needsResearch;
@@ -163,6 +174,7 @@ async function runCoordinatorPipeline({
         onActivity,
         existingContext: existingNotepad,
         onContextUpdate: (info) => reportStatus("Researcher", "active", info),
+        onAgentPrompt,
         signal,
       });
       debug.timing("researcher", Date.now() - t0);
@@ -181,6 +193,7 @@ async function runCoordinatorPipeline({
             existingContext: truncateHalf(existingNotepad),
             onContextUpdate: (info) =>
               reportStatus("Researcher", "active", info),
+            onAgentPrompt,
             signal,
           });
         } catch (retryErr) {
@@ -208,6 +221,7 @@ async function runCoordinatorPipeline({
           onActivity,
           existingContext: existingNotepad,
           onContextUpdate: (info) => reportStatus("Researcher", "active", info),
+          onAgentPrompt,
           signal,
         });
       } catch (err) {
@@ -268,6 +282,7 @@ async function runCoordinatorPipeline({
       onStreamChunk,
       onNotepadStreamChunk,
       onAgentStatus: reportStatus,
+      onAgentPrompt,
       signal,
     });
     debug.timing("writer", Date.now() - t0);
@@ -292,6 +307,7 @@ async function runCoordinatorPipeline({
           onStreamChunk,
           onNotepadStreamChunk,
           onAgentStatus: reportStatus,
+          onAgentPrompt,
           signal,
         });
       } catch (retryErr) {
@@ -336,6 +352,7 @@ export const runCoordinator = async ({
   onStreamChunk,
   onNotepadStreamChunk,
   onAgentStatus,
+  onAgentPrompt,
   signal,
 }) => {
   const emit = createEmitter("Coordinator", onActivity);
@@ -359,6 +376,7 @@ export const runCoordinator = async ({
         onNotepadStreamChunk,
         emit,
         reportStatus,
+        onAgentPrompt,
         signal,
       });
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
