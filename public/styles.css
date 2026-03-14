@@ -822,7 +822,6 @@ body {
 /* Agent Modal Tabs */
 .agent-modal-tabs {
   display: flex;
-  flex-wrap: wrap;
   gap: 0;
   border-bottom: 1px solid var(--color-border);
   padding: 0 16px;
@@ -832,7 +831,7 @@ body {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   cursor: pointer;

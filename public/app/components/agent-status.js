@@ -91,8 +91,6 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
 
   const getTabContent = () => {
     if (tab === "system") return prompts?.systemPrompt || null;
-    if (tab === "user") return prompts?.lastUserPrompt || null;
-    if (tab === "answer") return prompts?.lastAnswer || null;
     if (tab === "history") return null; // handled separately
     return contextText + prevText;
   };
@@ -160,18 +158,6 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
             System
           </button>
           <button
-            className="agent-modal-tab ${tab === "user" ? "active" : ""}"
-            onClick=${() => setTab("user")}
-          >
-            Prompt
-          </button>
-          <button
-            className="agent-modal-tab ${tab === "answer" ? "active" : ""}"
-            onClick=${() => setTab("answer")}
-          >
-            Answer
-          </button>
-          <button
             className="agent-modal-tab ${tab === "history" ? "active" : ""}"
             onClick=${() => setTab("history")}
           >
@@ -188,18 +174,6 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
             ? html`${prompts.systemPrompt}`
             : html`<div className="agent-modal-empty">
                 No prompt captured yet
-              </div>`)}
-          ${tab === "user" &&
-          (prompts?.lastUserPrompt
-            ? html`${prompts.lastUserPrompt}`
-            : html`<div className="agent-modal-empty">
-                No prompt captured yet
-              </div>`)}
-          ${tab === "answer" &&
-          (prompts?.lastAnswer
-            ? html`${prompts.lastAnswer}`
-            : html`<div className="agent-modal-empty">
-                No answer captured yet
               </div>`)}
           ${tab === "history" &&
           html`<${HistoryAccordion} history=${prompts?.history} />`}

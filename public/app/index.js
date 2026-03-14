@@ -55,20 +55,14 @@ export const App = () => {
   const [agentPrompts, setAgentPrompts] = React.useState({
     Coordinator: {
       systemPrompt: null,
-      lastUserPrompt: null,
-      lastAnswer: null,
       history: [],
     },
     Researcher: {
       systemPrompt: null,
-      lastUserPrompt: null,
-      lastAnswer: null,
       history: [],
     },
     Writer: {
       systemPrompt: null,
-      lastUserPrompt: null,
-      lastAnswer: null,
       history: [],
     },
   });
@@ -123,39 +117,17 @@ export const App = () => {
 
   const onAgentPrompt = React.useCallback((agentName, kind, promptText) => {
     setAgentPrompts((prev) => {
-      const agent = prev[agentName] || {
-        systemPrompt: null,
-        lastUserPrompt: null,
-        lastAnswer: null,
-        history: [],
-      };
-      const timestamp = new Date().toLocaleTimeString();
+      const agent = prev[agentName] || { systemPrompt: null, history: [] };
       if (kind === "system") {
         return { ...prev, [agentName]: { ...agent, systemPrompt: promptText } };
       }
-      if (kind === "answer") {
-        return {
-          ...prev,
-          [agentName]: {
-            ...agent,
-            lastAnswer: promptText,
-            history: [
-              ...agent.history,
-              { role: "answer", text: promptText, timestamp },
-            ],
-          },
-        };
-      }
-      // kind === "user"
+      const timestamp = new Date().toLocaleTimeString();
+      const role = kind === "answer" ? "answer" : "user";
       return {
         ...prev,
         [agentName]: {
           ...agent,
-          lastUserPrompt: promptText,
-          history: [
-            ...agent.history,
-            { role: "user", text: promptText, timestamp },
-          ],
+          history: [...agent.history, { role, text: promptText, timestamp }],
         },
       };
     });
