@@ -89,7 +89,8 @@ async function triageFollowUp(userMessage, existingNotepad, chatHistory, emit) {
   const session = await createSession(getTriageSystemPrompt(userMessage));
   try {
     const history = formatChatHistory(chatHistory);
-    const outline = extractNotepadOutline(existingNotepad);
+    const outline =
+      extractNotepadOutline(existingNotepad) || existingNotepad.slice(0, 1500);
     const prompt = `Existing notepad outline:\n${outline}${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
     if (emit) {
       emit("prompt", {

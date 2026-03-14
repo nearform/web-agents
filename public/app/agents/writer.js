@@ -54,7 +54,8 @@ export const runWriter = async ({
     onAgentStatus("Writer", status, info);
   };
 
-  const writerSystemPrompt = getWriterSystemPrompt(originalQuery);
+  const lastUserMsg = chatHistory?.findLast((m) => m.role === "user")?.text;
+  const writerSystemPrompt = getWriterSystemPrompt(originalQuery, lastUserMsg);
 
   emit("start", "Writer starting");
   emit("prompt", {
