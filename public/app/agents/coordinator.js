@@ -9,7 +9,7 @@ import {
 } from "./prompt-api.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
-import { TRIAGE_SYSTEM_PROMPT } from "./prompts.js";
+import { getTriageSystemPrompt } from "./prompts.js";
 
 const TRIAGE_SCHEMA = {
   type: "object",
@@ -39,11 +39,59 @@ const truncateHalf = (text) => {
   return text.slice(0, end) + "\n...[truncated for retry]";
 };
 
+const extractNotepadOutline = (notepad, budget = 1500) => {
+  if (!notepad) return "";
+  const lines = notepad.split("\n");
+
+  // Extract Summary section content
+  const summaryStart = lines.findIndex((l) => /^## Summary/.test(l));
+  let summaryText = "";
+  if (summaryStart !== -1) {
+    const summaryLines = [];
+    for (let i = summaryStart + 1; i < lines.length; i++) {
+      if (/^## /.test(lines[i])) break;
+      const trimmed = lines[i].trim();
+      if (trimmed) summaryLines.push(trimmed);
+    }
+    summaryText = summaryLines.join(" ");
+  }
+
+  // Collect all ## headings
+  const headings = lines
+    .filter((l) => /^## /.test(l))
+    .map((l) => l.replace(/^## /, "").trim());
+
+  // Collect post titles: lines like **[Title](URL)**
+  const postTitles = lines
+    .filter((l) => /\*\*\[.+?\]\(https?:\/\/.+?\)\*\*/.test(l))
+    .map((l) => {
+      const m = l.match(/\*\*\[(.+?)\]\((https?:\/\/[^)]+)\)\*\*/);
+      return m ? `- ${m[1]}` : null;
+    })
+    .filter(Boolean);
+
+  // Build outline
+  const parts = [];
+  if (summaryText) parts.push(`Summary: ${summaryText}`);
+  if (headings.length) parts.push(`Sections: ${headings.join(", ")}`);
+  if (postTitles.length) parts.push(`Posts:\n${postTitles.join("\n")}`);
+
+  const outline = parts.join("\n");
+  if (outline.length <= budget) return outline;
+
+  // Line-safe truncation
+  const cut = outline.lastIndexOf("\n", budget);
+  const end = cut > 0 ? cut : budget;
+  return outline.slice(0, end) + "\n...";
+};
+
 async function triageFollowUp(userMessage, existingNotepad, chatHistory, emit) {
-  const session = await createSession(TRIAGE_SYSTEM_PROMPT);
+  const session = await createSession(getTriageSystemPrompt(userMessage));
   try {
     const history = formatChatHistory(chatHistory);
-    const prompt = `Existing notepad summary (first 500 chars): "${existingNotepad.slice(0, 500)}"${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
+    const outline =
+      extractNotepadOutline(existingNotepad) || existingNotepad.slice(0, 1500);
+    const prompt = `Existing notepad outline:\n${outline}${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
     if (emit) {
       emit("prompt", {
         summary: "Triage: deciding if research needed",

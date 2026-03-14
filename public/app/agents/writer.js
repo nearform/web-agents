@@ -8,7 +8,7 @@ import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
-import { WRITER_SYSTEM_PROMPT } from "./prompts.js";
+import { getWriterSystemPrompt } from "./prompts.js";
 
 const formatChatHistory = (chatHistory, maxPairs = 3) => {
   if (!chatHistory || chatHistory.length === 0) return "";
@@ -54,14 +54,17 @@ export const runWriter = async ({
     onAgentStatus("Writer", status, info);
   };
 
+  const lastUserMsg = chatHistory?.findLast((m) => m.role === "user")?.text;
+  const writerSystemPrompt = getWriterSystemPrompt(originalQuery, lastUserMsg);
+
   emit("start", "Writer starting");
   emit("prompt", {
     summary: "Writer system prompt",
-    prompt: WRITER_SYSTEM_PROMPT,
+    prompt: writerSystemPrompt,
     kind: "system",
   });
 
-  let session = await createSession(WRITER_SYSTEM_PROMPT);
+  let session = await createSession(writerSystemPrompt);
   reportStatus("active");
 
   const tryStreaming = async (prompt, onChunk, label) => {
@@ -110,7 +113,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
     if (chatReply == null) {
       // Retry with truncated notepad and fresh session
       session.destroy();
-      session = await createSession(WRITER_SYSTEM_PROMPT);
+      session = await createSession(writerSystemPrompt);
       const retryPrompt = chatPrompt.replace(
         existingNotepad,
         truncateHalf(existingNotepad),
@@ -150,6 +153,7 @@ Maintain the structure (Summary, Posts). Add a Citations section with deduplicat
 - Preserve existing content and the new research's original wording. Do not rewrite existing posts.
 - Deduplicate URLs across old and new content. Each URL must appear only once — keep each link where it's most relevant.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
+- Do NOT include the "Verified URLs" section in your output — it is internal only.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 User's follow-up query: ${originalQuery}
 
@@ -161,6 +165,7 @@ ${researchBrief}`;
   } else if (hasResearch) {
     contentPrompt = `Format the research findings into a clean notepad. Preserve the researcher's structure and content faithfully. Clean up formatting and deduplicate URLs. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
+- Do NOT include the "Verified URLs" section in your output — it is internal only.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 Original question: ${originalQuery}
 
@@ -186,7 +191,7 @@ User request: ${originalQuery}`;
   if (notepadContent == null) {
     // Retry with truncated inputs and fresh session
     session.destroy();
-    session = await createSession(WRITER_SYSTEM_PROMPT);
+    session = await createSession(writerSystemPrompt);
     const shorterBrief = truncateHalf(researchBrief);
     const shorterNotepad = existingNotepad ? truncateHalf(existingNotepad) : "";
     const retryPrompt = contentPrompt
