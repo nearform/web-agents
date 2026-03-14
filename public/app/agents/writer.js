@@ -8,7 +8,7 @@ import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
-import { WRITER_SYSTEM_PROMPT } from "./prompts.js";
+import { getWriterSystemPrompt } from "./prompts.js";
 
 const formatChatHistory = (chatHistory, maxPairs = 3) => {
   if (!chatHistory || chatHistory.length === 0) return "";
@@ -54,14 +54,20 @@ export const runWriter = async ({
     onAgentStatus("Writer", status, info);
   };
 
+  const writerSystemPrompt = getWriterSystemPrompt(
+    originalQuery,
+    researchBrief,
+    existingNotepad,
+  );
+
   emit("start", "Writer starting");
   emit("prompt", {
     summary: "Writer system prompt",
-    prompt: WRITER_SYSTEM_PROMPT,
+    prompt: writerSystemPrompt,
     kind: "system",
   });
 
-  let session = await createSession(WRITER_SYSTEM_PROMPT);
+  let session = await createSession(writerSystemPrompt);
   reportStatus("active");
 
   const tryStreaming = async (prompt, onChunk, label) => {
@@ -110,7 +116,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
     if (chatReply == null) {
       // Retry with truncated notepad and fresh session
       session.destroy();
-      session = await createSession(WRITER_SYSTEM_PROMPT);
+      session = await createSession(writerSystemPrompt);
       const retryPrompt = chatPrompt.replace(
         existingNotepad,
         truncateHalf(existingNotepad),
@@ -186,7 +192,7 @@ User request: ${originalQuery}`;
   if (notepadContent == null) {
     // Retry with truncated inputs and fresh session
     session.destroy();
-    session = await createSession(WRITER_SYSTEM_PROMPT);
+    session = await createSession(writerSystemPrompt);
     const shorterBrief = truncateHalf(researchBrief);
     const shorterNotepad = existingNotepad ? truncateHalf(existingNotepad) : "";
     const retryPrompt = contentPrompt

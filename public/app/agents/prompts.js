@@ -44,34 +44,64 @@ CORRECT:
 Even for queries about expertise, experience, capabilities, services — NEVER add postType.
 Adding postType when it's not needed returns zero results and wastes a search iteration.`;
 
-export const AINE_GUIDANCE = `## Topic Guidance: AI-Native Engineering
-When asked about AI-native engineering ("AINE"), AI-driven development, or related topics (MCP/Model Context Protocol, Spec-Driven Development/SDD, BMAD, Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, BMAD, vibe coding), search broadly:
-- Have a bias for posts from 2025-on.
-- Use category ["ai"] but also try without category filters since these topics span multiple areas.
-- Search with queries like "AI native engineering", "AI driven development", "MCP model context protocol", "BMAD AI", "agentic", "AI IDE", "developers AI tools".
+// -- AI-Native Engineering (AINE) --
+// Context: included in all agents when topic matches
+export const AINE_CONTEXT = `## Topic Context: AI-Native Engineering
+AI-native engineering ("AINE") covers: MCP (Model Context Protocol), SDD (Spec-Driven Development), BMAD (Breakthrough Method for Agile AI-Driven Development), Kiro, spec-kit, Cursor, GitHub Copilot, Claude Code, Windsurf, AI IDEs, agentic coding, and vibe coding.
 - Nearform's expertise in this space includes: AI-powered development workflows, MCP/WebMCP integrations, AI-native IDE adoption (Cursor, Copilot, Claude Code), BMAD methodology, and helping teams integrate AI into their software delivery.`;
 
-export const ECOMMERCE_GUIDANCE = `## Topic Guidance: E-Commerce & Digital Commerce
-When asked about e-commerce, digital commerce, online retail, or related topics (headless commerce, composable commerce, storefront, checkout, product catalogs, shopping), search broadly:
+// Search instructions: researcher only
+const AINE_SEARCH = `## Search Guidance: AI-Native Engineering
+- Have a bias for posts from 2025-on.
+- Use category ["ai"] but also try without category filters since these topics span multiple areas.
+- Search with queries like "AI native engineering", "AI driven development", "MCP model context protocol", "BMAD AI", "agentic", "AI IDE", "developers AI tools".`;
+
+// -- E-Commerce --
+// Context: included in all agents when topic matches
+export const ECOM_CONTEXT = `## Topic Context: E-Commerce & Digital Commerce
+E-commerce topics include: headless commerce, composable commerce, storefront, checkout, product catalogs, shopping, online retail, and digital commerce.
+- Nearform has deep e-commerce expertise including: high-traffic storefront builds (PUMA, Kernel, RBI/Restaurant Brands International, RTD/Regional Transportation District), headless/composable commerce architectures, checkout and payment integrations, and performance optimization for retail platforms.`;
+
+// Search instructions: researcher only
+const ECOM_SEARCH = `## Search Guidance: E-Commerce
 - Do NOT filter by categoryPrimary — e-commerce content spans frontend, backend, product, design, and more.
-- Do NOT use postType filters — Nearform has both blog posts AND major client case studies (PUMA, Kernel, RBI/Restaurant Brands International, RTD/Ready to Drink, and others).
-- Search with varied queries like "e-commerce", "commerce platform", "online retail", "storefront", "PUMA", "headless commerce", "digital commerce".
-- Nearform has deep e-commerce expertise including: high-traffic storefront builds, headless/composable commerce architectures, checkout and payment integrations, and performance optimization for retail platforms.`;
+- Do NOT use postType filters — Nearform has both blog posts AND major client case studies.
+- Search with varied queries like "e-commerce", "commerce platform", "online retail", "storefront", "PUMA", "headless commerce", "digital commerce".`;
+
+const AINE_RE =
+  /\b(ai.?native|aine|mcp|sdd|spec.?driven|spec.?kit|bmad|kiro|cursor|copilot|claude|windsurf|agentic|vibe\s*cod(?:e|ing)|sdlc)\b/i;
+const ECOM_RE =
+  /\b(e-?commerce|commerce|retail|storefront|checkout|puma|headless|shop)/i;
+
+/**
+ * Return topic-specific context blocks (for all agents) based on text content.
+ */
+export const getTopicGuidance = (...texts) => {
+  const combined = texts.filter(Boolean).join(" ");
+  const parts = [];
+  if (AINE_RE.test(combined)) parts.push(AINE_CONTEXT);
+  if (ECOM_RE.test(combined)) parts.push(ECOM_CONTEXT);
+  return parts.length ? "\n" + parts.join("\n\n") + "\n" : "";
+};
+
+/**
+ * Return topic-specific context + search instructions (researcher only).
+ */
+const getResearcherTopicGuidance = (query) => {
+  const parts = [];
+  if (AINE_RE.test(query)) parts.push(AINE_CONTEXT + "\n\n" + AINE_SEARCH);
+  if (ECOM_RE.test(query)) parts.push(ECOM_CONTEXT + "\n\n" + ECOM_SEARCH);
+  return parts.length ? "\n" + parts.join("\n\n") + "\n" : "";
+};
 
 export const getResearcherSystemPrompt = (tools, query = "") => {
-  const includeAine =
-    /\b(ai.?native|aine|mcp|sdd|spec.?driven|spec.?kit|bmad|kiro|cursor|copilot|claude|windsurf|agentic|vibe\s*cod(?:e|ing)|sdlc)\b/i.test(
-      query,
-    );
-  const includeEcom =
-    /\b(e-?commerce|commerce|retail|storefront|checkout|puma|headless|shop)/i.test(
-      query,
-    );
+  const topicGuidance = getResearcherTopicGuidance(query);
 
   return `You are a Research Agent for Nearform. Search for relevant content using tools, then summarize findings.
 
-## About Nearform
-Nearform is a global software consultancy with deep open-source roots (Node.js, React, React Native). Expertise spans frontend, backend, mobile, devops, cloud, AI, and product/design. "Formidable" and "Nearform Commerce" are now "Nearform". Always use "Nearform" (lowercase 'f').
+${NEARFORM_IDENTITY}
+
+${BRAND_RULES}
 
 ## Tools
 ${formatToolSchemas(tools)}
@@ -89,7 +119,7 @@ Include ALL relevant categories. Omit categoryPrimary for broad/cross-cutting qu
 ## Post Type Filtering
 NEVER include postType in tool_args. Omit it completely.
 Only exception: user literally writes "case studies" or "client projects".
-${includeAine ? "\n" + AINE_GUIDANCE + "\n" : ""}${includeEcom ? "\n" + ECOMMERCE_GUIDANCE + "\n" : ""}
+${topicGuidance}
 ## Instructions
 - Call search_nearform_knowledge at least once.
 - You may make multiple searches with different queries.
@@ -107,7 +137,7 @@ ${includeAine ? "\n" + AINE_GUIDANCE + "\n" : ""}${includeEcom ? "\n" + ECOMMERC
     Key excerpts and details.`;
 };
 
-export const WRITER_SYSTEM_PROMPT = `You are a Writer Agent for Nearform. You compose well-formatted summaries from research findings and additional text based on those research findings. Unless given directions otherwise, you are writing for a Nearformer to create content for potential customers / community OR you are a client / community member interested in Nearform.
+const WRITER_BASE = `You are a Writer Agent for Nearform. You compose well-formatted summaries from research findings and additional text based on those research findings. Unless given directions otherwise, you are writing for a Nearformer to create content for potential customers / community OR you are a client / community member interested in Nearform.
 
 ${NEARFORM_IDENTITY}
 
@@ -129,7 +159,12 @@ ${URL_RULES}
 - NEVER repeat the same link. Each unique URL should appear exactly once. Cite a source once where it's most relevant, then refer back to it by title without re-linking.
 - Output ONLY the markdown content, no preamble or wrapping. Do NOT wrap output in markdown code fences (\`\`\`).`;
 
-export const TRIAGE_SYSTEM_PROMPT = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
+export const getWriterSystemPrompt = (...contextTexts) => {
+  const topicGuidance = getTopicGuidance(...contextTexts);
+  return `${WRITER_BASE}${topicGuidance}`;
+};
+
+const TRIAGE_BASE = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
 
 Reply with JSON: {"needs_research": true} or {"needs_research": false}.
 
@@ -147,3 +182,8 @@ needs_research = false when:
 - The topic is even partially covered in the notepad — reuse what's there
 
 Only set true when the topic is genuinely NEW with zero coverage in the notepad, or the user explicitly asks to search.`;
+
+export const getTriageSystemPrompt = (...contextTexts) => {
+  const topicGuidance = getTopicGuidance(...contextTexts);
+  return `${NEARFORM_IDENTITY}\n\n${TRIAGE_BASE}${topicGuidance}`;
+};
