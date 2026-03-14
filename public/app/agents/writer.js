@@ -54,11 +54,7 @@ export const runWriter = async ({
     onAgentStatus("Writer", status, info);
   };
 
-  const writerSystemPrompt = getWriterSystemPrompt(
-    originalQuery,
-    researchBrief,
-    existingNotepad,
-  );
+  const writerSystemPrompt = getWriterSystemPrompt(originalQuery);
 
   emit("start", "Writer starting");
   emit("prompt", {

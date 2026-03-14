@@ -87,7 +87,7 @@ const extractNotepadOutline = (notepad, budget = 1500) => {
 
 async function triageFollowUp(userMessage, existingNotepad, chatHistory, emit) {
   const session = await createSession(
-    getTriageSystemPrompt(userMessage, existingNotepad),
+    getTriageSystemPrompt(userMessage),
   );
   try {
     const history = formatChatHistory(chatHistory);

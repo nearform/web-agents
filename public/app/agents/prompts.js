@@ -77,10 +77,17 @@ const ECOM_RE =
  * Return topic-specific context blocks (for all agents) based on text content.
  */
 export const getTopicGuidance = (...texts) => {
-  const combined = texts.filter(Boolean).join(" ");
+  let aine = false;
+  let ecom = false;
+  for (const t of texts) {
+    if (!t) continue;
+    if (!aine && AINE_RE.test(t)) aine = true;
+    if (!ecom && ECOM_RE.test(t)) ecom = true;
+    if (aine && ecom) break;
+  }
   const parts = [];
-  if (AINE_RE.test(combined)) parts.push(AINE_CONTEXT);
-  if (ECOM_RE.test(combined)) parts.push(ECOM_CONTEXT);
+  if (aine) parts.push(AINE_CONTEXT);
+  if (ecom) parts.push(ECOM_CONTEXT);
   return parts.length ? "\n" + parts.join("\n\n") + "\n" : "";
 };
 
