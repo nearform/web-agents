@@ -8,6 +8,7 @@ export const runResearcher = async ({
   onActivity,
   existingContext,
   onContextUpdate,
+  onAgentPrompt,
   signal,
 }) => {
   const searchTools = tools.filter(
@@ -84,6 +85,7 @@ User question: ${query}`,
     onActivity,
     agentName: "Researcher",
     onContextUpdate,
+    onAgentPrompt,
     signal,
   });
 

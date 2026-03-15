@@ -19,6 +19,13 @@ const ExtLink = ({ href, children }) =>
     >${children}</a
   >`;
 
+const INITIAL_AGENT_PROMPT = { systemPrompt: null, history: [] };
+const INITIAL_AGENT_PROMPTS = {
+  Coordinator: { ...INITIAL_AGENT_PROMPT },
+  Researcher: { ...INITIAL_AGENT_PROMPT },
+  Writer: { ...INITIAL_AGENT_PROMPT },
+};
+
 const INITIAL_AGENT_STATUSES = {
   Coordinator: {
     status: "idle",
@@ -52,6 +59,7 @@ export const App = () => {
     INITIAL_AGENT_STATUSES,
   );
   const [prevAgentStatuses, setPrevAgentStatuses] = React.useState(null);
+  const [agentPrompts, setAgentPrompts] = React.useState(INITIAL_AGENT_PROMPTS);
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
   const [collapsedPanels, setCollapsedPanels] = React.useState({
@@ -61,6 +69,7 @@ export const App = () => {
   });
   const [bannerMinimized, setBannerMinimized] = React.useState(false);
   const abortControllerRef = React.useRef(null);
+  const runCounterRef = React.useRef(0);
   const [stoppedState, setStoppedState] = React.useState(null);
 
   React.useEffect(() => {
@@ -101,6 +110,33 @@ export const App = () => {
     setActivities((prev) => [...prev, event]);
   }, []);
 
+  const onAgentPrompt = React.useCallback(
+    (agentName, kind, promptText, run) => {
+      setAgentPrompts((prev) => {
+        const agent = prev[agentName] || INITIAL_AGENT_PROMPT;
+        if (kind === "system") {
+          return {
+            ...prev,
+            [agentName]: { ...agent, systemPrompt: promptText },
+          };
+        }
+        const timestamp = new Date().toLocaleTimeString();
+        const role = kind === "answer" ? "answer" : "user";
+        return {
+          ...prev,
+          [agentName]: {
+            ...agent,
+            history: [
+              ...agent.history,
+              { role, text: promptText, timestamp, run },
+            ],
+          },
+        };
+      });
+    },
+    [],
+  );
+
   const onAgentStatus = React.useCallback(
     (agentName, statusValue, contextInfo) => {
       if (contextInfo?.pct != null) {
@@ -140,6 +176,10 @@ export const App = () => {
         if (hasActivity) setPrevAgentStatuses(current);
         return INITIAL_AGENT_STATUSES;
       });
+      const currentRun = ++runCounterRef.current;
+      const onAgentPromptWithRun = (agentName, kind, text) => {
+        onAgentPrompt(agentName, kind, text, currentRun);
+      };
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -154,6 +194,7 @@ export const App = () => {
           },
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
           onAgentStatus,
+          onAgentPrompt: onAgentPromptWithRun,
           signal: controller.signal,
         });
 
@@ -178,13 +219,17 @@ export const App = () => {
         setTools(listTools());
       }
     },
-    [onActivity, onAgentStatus],
+    [onActivity, onAgentStatus, onAgentPrompt],
   );
 
   const handleSend = React.useCallback(
     (text) => {
-      setMessages((prev) => [...prev, { role: "user", text }]);
-      executeCoordinator(text, notepadContent || undefined, messages);
+      let updatedMessages;
+      setMessages((prev) => {
+        updatedMessages = [...prev, { role: "user", text }];
+        return updatedMessages;
+      });
+      executeCoordinator(text, notepadContent || undefined, updatedMessages);
     },
     [notepadContent, executeCoordinator],
   );
@@ -220,6 +265,8 @@ export const App = () => {
     setNotepadContent("");
     setAgentStatuses(INITIAL_AGENT_STATUSES);
     setPrevAgentStatuses(null);
+    setAgentPrompts(INITIAL_AGENT_PROMPTS);
+    runCounterRef.current = 0;
     setStoppedState(null);
     setStreamingText(null);
     updateNotepad("");
@@ -322,6 +369,7 @@ export const App = () => {
         <${AgentStatus}
           statuses=${agentStatuses}
           prevStatuses=${prevAgentStatuses}
+          prompts=${agentPrompts}
         />
         <${ToolStatus} tools=${tools} />
       </div>
