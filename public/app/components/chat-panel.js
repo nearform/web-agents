@@ -102,8 +102,12 @@ export const ChatPanel = ({
   onStopNewQuery,
 }) => {
   const [suggestions] = React.useState(() => {
-    const shuffled = [...SUGGESTED_QUERIES].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 4);
+    const pool = [...SUGGESTED_QUERIES];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 4);
   });
 
   const handleSubmit = (e) => {
@@ -161,7 +165,11 @@ export const ChatPanel = ({
                 <button
                   key=${q.label}
                   className="chat-suggestion-chip"
-                  onClick=${() => onSend(q.query)}
+                  disabled=${!ready || isProcessing}
+                  onClick=${() => {
+                    if (!ready || isProcessing) return;
+                    onSend(q.query);
+                  }}
                 >
                   <i className="ph ${q.icon}"></i>
                   <span>${q.label}</span>
