@@ -236,8 +236,9 @@ export const App = () => {
 
   const handleSend = React.useCallback(
     (text) => {
-      setMessages((prev) => [...prev, { role: "user", text }]);
-      executeCoordinator(text, notepadContent || undefined, messages);
+      const updatedMessages = [...messages, { role: "user", text }];
+      setMessages(updatedMessages);
+      executeCoordinator(text, notepadContent || undefined, updatedMessages);
     },
     [notepadContent, executeCoordinator, messages],
   );

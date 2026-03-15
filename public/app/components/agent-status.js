@@ -45,7 +45,11 @@ const HistoryAccordion = ({ history }) => {
             key=${idx}
             className="agent-history-item agent-history-${entry.role}"
           >
-            <div className="agent-history-header" onClick=${() => toggle(idx)}>
+            <button
+              className="agent-history-header"
+              onClick=${() => toggle(idx)}
+              aria-expanded=${isOpen}
+            >
               <span className="agent-history-chevron ${isOpen ? "open" : ""}">
                 <i className="ph ph-caret-right"></i>
               </span>
@@ -56,7 +60,7 @@ const HistoryAccordion = ({ history }) => {
               <span className="agent-history-time">${entry.timestamp}</span>
               ${!isOpen &&
               html`<span className="agent-history-preview">${preview}</span>`}
-            </div>
+            </button>
             ${isOpen &&
             html`<div className="agent-history-body">
               <pre>${entry.text || "(empty)"}</pre>
@@ -104,12 +108,12 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
   const handleCopy = async () => {
     let text;
     if (tab === "history") {
+      let pNum = 0;
+      let aNum = 0;
       text = (prompts?.history || [])
-        .map((entry, i) => {
+        .map((entry) => {
           const label =
-            entry.role === "user"
-              ? `PROMPT #${Math.ceil((i + 1) / 2)}`
-              : `ANSWER #${Math.floor((i + 1) / 2)}`;
+            entry.role === "user" ? `PROMPT #${++pNum}` : `ANSWER #${++aNum}`;
           return `[${label} ${entry.timestamp}]\n${entry.text}\n---`;
         })
         .join("\n");

@@ -875,10 +875,16 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 4px;
   transition: background 0.15s;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
 }
 
 .agent-history-header:hover {
