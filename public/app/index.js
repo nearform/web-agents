@@ -19,6 +19,13 @@ const ExtLink = ({ href, children }) =>
     >${children}</a
   >`;
 
+const INITIAL_AGENT_PROMPT = { systemPrompt: null, history: [] };
+const INITIAL_AGENT_PROMPTS = {
+  Coordinator: { ...INITIAL_AGENT_PROMPT },
+  Researcher: { ...INITIAL_AGENT_PROMPT },
+  Writer: { ...INITIAL_AGENT_PROMPT },
+};
+
 const INITIAL_AGENT_STATUSES = {
   Coordinator: {
     status: "idle",
@@ -52,20 +59,7 @@ export const App = () => {
     INITIAL_AGENT_STATUSES,
   );
   const [prevAgentStatuses, setPrevAgentStatuses] = React.useState(null);
-  const [agentPrompts, setAgentPrompts] = React.useState({
-    Coordinator: {
-      systemPrompt: null,
-      history: [],
-    },
-    Researcher: {
-      systemPrompt: null,
-      history: [],
-    },
-    Writer: {
-      systemPrompt: null,
-      history: [],
-    },
-  });
+  const [agentPrompts, setAgentPrompts] = React.useState(INITIAL_AGENT_PROMPTS);
   const [platformStatus, setPlatformStatus] = React.useState(null);
   const [showPlatformModal, setShowPlatformModal] = React.useState(false);
   const [collapsedPanels, setCollapsedPanels] = React.useState({
@@ -117,7 +111,7 @@ export const App = () => {
 
   const onAgentPrompt = React.useCallback((agentName, kind, promptText) => {
     setAgentPrompts((prev) => {
-      const agent = prev[agentName] || { systemPrompt: null, history: [] };
+      const agent = prev[agentName] || INITIAL_AGENT_PROMPT;
       if (kind === "system") {
         return { ...prev, [agentName]: { ...agent, systemPrompt: promptText } };
       }
@@ -172,26 +166,7 @@ export const App = () => {
         if (hasActivity) setPrevAgentStatuses(current);
         return INITIAL_AGENT_STATUSES;
       });
-      setAgentPrompts({
-        Coordinator: {
-          systemPrompt: null,
-          lastUserPrompt: null,
-          lastAnswer: null,
-          history: [],
-        },
-        Researcher: {
-          systemPrompt: null,
-          lastUserPrompt: null,
-          lastAnswer: null,
-          history: [],
-        },
-        Writer: {
-          systemPrompt: null,
-          lastUserPrompt: null,
-          lastAnswer: null,
-          history: [],
-        },
-      });
+      setAgentPrompts(INITIAL_AGENT_PROMPTS);
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -274,26 +249,7 @@ export const App = () => {
     setNotepadContent("");
     setAgentStatuses(INITIAL_AGENT_STATUSES);
     setPrevAgentStatuses(null);
-    setAgentPrompts({
-      Coordinator: {
-        systemPrompt: null,
-        lastUserPrompt: null,
-        lastAnswer: null,
-        history: [],
-      },
-      Researcher: {
-        systemPrompt: null,
-        lastUserPrompt: null,
-        lastAnswer: null,
-        history: [],
-      },
-      Writer: {
-        systemPrompt: null,
-        lastUserPrompt: null,
-        lastAnswer: null,
-        history: [],
-      },
-    });
+    setAgentPrompts(INITIAL_AGENT_PROMPTS);
     setStoppedState(null);
     setStreamingText(null);
     updateNotepad("");
