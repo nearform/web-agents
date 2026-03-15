@@ -241,27 +241,33 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
             </button>
           </div>
         </div>
-        <div className="agent-modal-tabs">
+        <div className="agent-modal-tabs" role="tablist">
           <button
             className="agent-modal-tab ${tab === "context" ? "active" : ""}"
+            role="tab"
+            aria-selected=${tab === "context"}
             onClick=${() => setTab("context")}
           >
             Context
           </button>
           <button
             className="agent-modal-tab ${tab === "system" ? "active" : ""}"
+            role="tab"
+            aria-selected=${tab === "system"}
             onClick=${() => setTab("system")}
           >
             System
           </button>
           <button
             className="agent-modal-tab ${tab === "history" ? "active" : ""}"
+            role="tab"
+            aria-selected=${tab === "history"}
             onClick=${() => setTab("history")}
           >
             History
           </button>
         </div>
-        <div className="activity-modal-body">
+        <div className="activity-modal-body" role="tabpanel">
           ${tab === "context" &&
           html`${contextText}
           ${prevText &&
