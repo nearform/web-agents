@@ -2,6 +2,64 @@ import React from "react";
 import { html } from "../util/html.js";
 import { renderMarkdown } from "../util/markdown.js";
 
+const SUGGESTED_QUERIES = [
+  {
+    icon: "ph-storefront",
+    label: "Walmart's checkout transformation",
+    query: "How did Nearform help Walmart transform their checkout experience?",
+  },
+  {
+    icon: "ph-robot",
+    label: "AI-powered executive search transformation",
+    query:
+      "What AI-powered transformation did Nearform deliver for the executive search consultancy?",
+  },
+  {
+    icon: "ph-bank",
+    label: "Nomo digital bank launch",
+    query: "How was Nomo, the digital-only bank, launched in under 9 months?",
+  },
+  {
+    icon: "ph-robot",
+    label: "AI-native engineering",
+    query:
+      "What is AI-native engineering and how does it change product development?",
+  },
+  {
+    icon: "ph-storefront",
+    label: "Puma's global e-commerce",
+    query: "How did Nearform scale Puma's e-commerce platform globally?",
+  },
+  {
+    icon: "ph-code",
+    label: "MCP server best practices",
+    query: "What are best practices for implementing MCP servers?",
+  },
+  {
+    icon: "ph-robot",
+    label: "On-device AI & browser vector search",
+    query:
+      "How is Nearform using on-device AI and browser-based vector search?",
+  },
+  {
+    icon: "ph-bank",
+    label: "Travelex sales conversion boost",
+    query:
+      "How did Travelex boost sales conversion by double digits with their new app?",
+  },
+  {
+    icon: "ph-robot",
+    label: "Open vs closed LLMs for enterprise",
+    query:
+      "What should enterprises consider when choosing open vs closed LLMs?",
+  },
+  {
+    icon: "ph-storefront",
+    label: "Starbucks progressive web app",
+    query: "How did Nearform help Starbucks build their progressive web app?",
+  },
+];
+
 const ChatBubbleText = ({ text, isAssistant }) => {
   const [showRaw, setShowRaw] = React.useState(false);
 
@@ -43,6 +101,11 @@ export const ChatPanel = ({
   onStopContinue,
   onStopNewQuery,
 }) => {
+  const [suggestions] = React.useState(() => {
+    const shuffled = [...SUGGESTED_QUERIES].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 4);
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const input = e.currentTarget.elements.message;
@@ -91,9 +154,20 @@ export const ChatPanel = ({
         ${!hasMessages &&
         !stoppedState &&
         html`
-          <div className="chat-empty">
-            Ask a question about Nearform's content to see the agents
-            collaborate.
+          <div className="chat-suggestions">
+            <div className="chat-suggestions-heading">Try asking about...</div>
+            ${suggestions.map(
+              (q) => html`
+                <button
+                  key=${q.label}
+                  className="chat-suggestion-chip"
+                  onClick=${() => onSend(q.query)}
+                >
+                  <i className="ph ${q.icon}"></i>
+                  <span>${q.label}</span>
+                </button>
+              `,
+            )}
           </div>
         `}
         ${messages.map(
