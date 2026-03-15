@@ -959,6 +959,66 @@ body {
   line-height: 1.5;
 }
 
+/* Run Groups in History */
+.agent-history-run-group {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+
+.agent-history-run-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.agent-history-run-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.agent-history-run-header:hover {
+  background: var(--color-surface);
+}
+
+.agent-history-run-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.agent-history-run-chevron.open {
+  transform: rotate(90deg);
+}
+
+.agent-history-run-label {
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.agent-history-run-summary {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+.agent-history-run-entries {
+  padding-left: 8px;
+}
+
 /* Collapsible Panels */
 .panel-collapsed {
   width: 48px;

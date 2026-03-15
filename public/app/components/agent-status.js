@@ -4,26 +4,10 @@ import React from "react";
 
 const AGENTS = ["Coordinator", "Researcher", "Writer"];
 
-const HistoryAccordion = ({ history }) => {
-  const [expanded, setExpanded] = React.useState(new Set());
-
-  if (!history || history.length === 0) {
-    return html`<div className="agent-modal-empty">No history yet</div>`;
-  }
-
-  const toggle = (idx) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  };
-
-  // Number prompts and answers separately
+const HistoryEntries = ({ entries, expanded, toggle, idPrefix }) => {
   let promptNum = 0;
   let answerNum = 0;
-  const numbered = history.map((entry) => {
+  const numbered = entries.map((entry) => {
     if (entry.role === "user") {
       promptNum++;
       return { ...entry, label: `Prompt #${promptNum}`, num: promptNum };
@@ -32,38 +16,141 @@ const HistoryAccordion = ({ history }) => {
     return { ...entry, label: `Answer #${answerNum}`, num: answerNum };
   });
 
+  return numbered.map((entry, idx) => {
+    const key = `${idPrefix}-${idx}`;
+    const isOpen = expanded.has(key);
+    const preview =
+      entry.text?.length > 80
+        ? entry.text.slice(0, 80) + "..."
+        : entry.text || "";
+    return html`
+      <div
+        key=${key}
+        className="agent-history-item agent-history-${entry.role}"
+      >
+        <button
+          className="agent-history-header"
+          onClick=${() => toggle(key)}
+          aria-expanded=${isOpen}
+        >
+          <span className="agent-history-chevron ${isOpen ? "open" : ""}">
+            <i className="ph ph-caret-right"></i>
+          </span>
+          <span className="agent-history-role"
+            >${entry.role === "user" ? "PROMPT" : "ANSWER"}</span
+          >
+          <span className="agent-history-label">${entry.label}</span>
+          <span className="agent-history-time">${entry.timestamp}</span>
+          ${!isOpen &&
+          html`<span className="agent-history-preview">${preview}</span>`}
+        </button>
+        ${isOpen &&
+        html`<div className="agent-history-body">
+          <pre>${entry.text || "(empty)"}</pre>
+        </div>`}
+      </div>
+    `;
+  });
+};
+
+const HistoryAccordion = ({ history }) => {
+  const [expanded, setExpanded] = React.useState(new Set());
+
+  if (!history || history.length === 0) {
+    return html`<div className="agent-modal-empty">No history yet</div>`;
+  }
+
+  const toggle = (key) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // Group entries by run number
+  const runGroups = [];
+  const runMap = new Map();
+  for (const entry of history) {
+    const run = entry.run ?? 1;
+    if (!runMap.has(run)) {
+      const group = { run, entries: [] };
+      runMap.set(run, group);
+      runGroups.push(group);
+    }
+    runMap.get(run).entries.push(entry);
+  }
+
+  // Single run — show flat view (no grouping)
+  if (runGroups.length === 1) {
+    return html`
+      <div className="agent-history-list">
+        <${HistoryEntries}
+          entries=${runGroups[0].entries}
+          expanded=${expanded}
+          toggle=${toggle}
+          idPrefix="r1"
+        />
+      </div>
+    `;
+  }
+
+  // Default: most recent run expanded
+  const latestRun = runGroups[runGroups.length - 1].run;
+  const isRunExpanded = (run) => {
+    const key = `run-${run}`;
+    // If user hasn't toggled anything yet, expand the latest run
+    if (!expanded.has("__toggled")) {
+      return run === latestRun;
+    }
+    return expanded.has(key);
+  };
+
+  const toggleRun = (run) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.add("__toggled");
+      const key = `run-${run}`;
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   return html`
     <div className="agent-history-list">
-      ${numbered.map((entry, idx) => {
-        const isOpen = expanded.has(idx);
-        const preview =
-          entry.text?.length > 80
-            ? entry.text.slice(0, 80) + "..."
-            : entry.text || "";
+      ${runGroups.map((group) => {
+        const open = isRunExpanded(group.run);
+        const prompts = group.entries.filter((e) => e.role === "user").length;
+        const answers = group.entries.filter((e) => e.role === "answer").length;
+        const time = group.entries[0]?.timestamp || "";
         return html`
-          <div
-            key=${idx}
-            className="agent-history-item agent-history-${entry.role}"
-          >
+          <div key=${group.run} className="agent-history-run-group">
             <button
-              className="agent-history-header"
-              onClick=${() => toggle(idx)}
-              aria-expanded=${isOpen}
+              className="agent-history-run-header"
+              onClick=${() => toggleRun(group.run)}
+              aria-expanded=${open}
             >
-              <span className="agent-history-chevron ${isOpen ? "open" : ""}">
+              <span className="agent-history-run-chevron ${open ? "open" : ""}">
                 <i className="ph ph-caret-right"></i>
               </span>
-              <span className="agent-history-role"
-                >${entry.role === "user" ? "PROMPT" : "ANSWER"}</span
-              >
-              <span className="agent-history-label">${entry.label}</span>
-              <span className="agent-history-time">${entry.timestamp}</span>
-              ${!isOpen &&
-              html`<span className="agent-history-preview">${preview}</span>`}
+              <span className="agent-history-run-label">Run #${group.run}</span>
+              <span className="agent-history-time">${time}</span>
+              ${!open &&
+              html`<span className="agent-history-run-summary"
+                >${prompts} prompt${prompts !== 1 ? "s" : ""}, ${answers}
+                ${" "}answer${answers !== 1 ? "s" : ""}</span
+              >`}
             </button>
-            ${isOpen &&
-            html`<div className="agent-history-body">
-              <pre>${entry.text || "(empty)"}</pre>
+            ${open &&
+            html`<div className="agent-history-run-entries">
+              <${HistoryEntries}
+                entries=${group.entries}
+                expanded=${expanded}
+                toggle=${toggle}
+                idPrefix=${"r" + group.run}
+              />
             </div>`}
           </div>
         `;
@@ -110,11 +197,17 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
     if (tab === "history") {
       let pNum = 0;
       let aNum = 0;
+      let lastRun = null;
       text = (prompts?.history || [])
         .map((entry) => {
           const label =
             entry.role === "user" ? `PROMPT #${++pNum}` : `ANSWER #${++aNum}`;
-          return `[${label} ${entry.timestamp}]\n${entry.text}\n---`;
+          const runHeader =
+            entry.run != null && entry.run !== lastRun
+              ? `=== Run #${entry.run} ===\n`
+              : "";
+          lastRun = entry.run;
+          return `${runHeader}[${label} ${entry.timestamp}]\n${entry.text}\n---`;
         })
         .join("\n");
     } else {

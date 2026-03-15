@@ -69,6 +69,7 @@ export const App = () => {
   });
   const [bannerMinimized, setBannerMinimized] = React.useState(false);
   const abortControllerRef = React.useRef(null);
+  const runCounterRef = React.useRef(0);
   const [stoppedState, setStoppedState] = React.useState(null);
 
   React.useEffect(() => {
@@ -109,23 +110,32 @@ export const App = () => {
     setActivities((prev) => [...prev, event]);
   }, []);
 
-  const onAgentPrompt = React.useCallback((agentName, kind, promptText) => {
-    setAgentPrompts((prev) => {
-      const agent = prev[agentName] || INITIAL_AGENT_PROMPT;
-      if (kind === "system") {
-        return { ...prev, [agentName]: { ...agent, systemPrompt: promptText } };
-      }
-      const timestamp = new Date().toLocaleTimeString();
-      const role = kind === "answer" ? "answer" : "user";
-      return {
-        ...prev,
-        [agentName]: {
-          ...agent,
-          history: [...agent.history, { role, text: promptText, timestamp }],
-        },
-      };
-    });
-  }, []);
+  const onAgentPrompt = React.useCallback(
+    (agentName, kind, promptText, run) => {
+      setAgentPrompts((prev) => {
+        const agent = prev[agentName] || INITIAL_AGENT_PROMPT;
+        if (kind === "system") {
+          return {
+            ...prev,
+            [agentName]: { ...agent, systemPrompt: promptText },
+          };
+        }
+        const timestamp = new Date().toLocaleTimeString();
+        const role = kind === "answer" ? "answer" : "user";
+        return {
+          ...prev,
+          [agentName]: {
+            ...agent,
+            history: [
+              ...agent.history,
+              { role, text: promptText, timestamp, run },
+            ],
+          },
+        };
+      });
+    },
+    [],
+  );
 
   const onAgentStatus = React.useCallback(
     (agentName, statusValue, contextInfo) => {
@@ -166,7 +176,10 @@ export const App = () => {
         if (hasActivity) setPrevAgentStatuses(current);
         return INITIAL_AGENT_STATUSES;
       });
-      setAgentPrompts(INITIAL_AGENT_PROMPTS);
+      const currentRun = ++runCounterRef.current;
+      const onAgentPromptWithRun = (agentName, kind, text) => {
+        onAgentPrompt(agentName, kind, text, currentRun);
+      };
       try {
         const currentTools = listTools();
         const answer = await runCoordinator({
@@ -181,7 +194,7 @@ export const App = () => {
           },
           onNotepadStreamChunk: (chunk) => setNotepadContent(chunk),
           onAgentStatus,
-          onAgentPrompt,
+          onAgentPrompt: onAgentPromptWithRun,
           signal: controller.signal,
         });
 
@@ -250,6 +263,7 @@ export const App = () => {
     setAgentStatuses(INITIAL_AGENT_STATUSES);
     setPrevAgentStatuses(null);
     setAgentPrompts(INITIAL_AGENT_PROMPTS);
+    runCounterRef.current = 0;
     setStoppedState(null);
     setStreamingText(null);
     updateNotepad("");
