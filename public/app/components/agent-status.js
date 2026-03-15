@@ -4,12 +4,86 @@ import React from "react";
 
 const AGENTS = ["Coordinator", "Researcher", "Writer"];
 
-const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
+const HistoryAccordion = ({ history }) => {
+  const [expanded, setExpanded] = React.useState(new Set());
+
+  if (!history || history.length === 0) {
+    return html`<div className="agent-modal-empty">No history yet</div>`;
+  }
+
+  const toggle = (idx) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  // Number prompts and answers separately
+  let promptNum = 0;
+  let answerNum = 0;
+  const numbered = history.map((entry) => {
+    if (entry.role === "user") {
+      promptNum++;
+      return { ...entry, label: `Prompt #${promptNum}`, num: promptNum };
+    }
+    answerNum++;
+    return { ...entry, label: `Answer #${answerNum}`, num: answerNum };
+  });
+
+  return html`
+    <div className="agent-history-list">
+      ${numbered.map((entry, idx) => {
+        const isOpen = expanded.has(idx);
+        const preview =
+          entry.text?.length > 80
+            ? entry.text.slice(0, 80) + "..."
+            : entry.text || "";
+        return html`
+          <div
+            key=${idx}
+            className="agent-history-item agent-history-${entry.role}"
+          >
+            <button
+              className="agent-history-header"
+              onClick=${() => toggle(idx)}
+              aria-expanded=${isOpen}
+            >
+              <span className="agent-history-chevron ${isOpen ? "open" : ""}">
+                <i className="ph ph-caret-right"></i>
+              </span>
+              <span className="agent-history-role"
+                >${entry.role === "user" ? "PROMPT" : "ANSWER"}</span
+              >
+              <span className="agent-history-label">${entry.label}</span>
+              <span className="agent-history-time">${entry.timestamp}</span>
+              ${!isOpen &&
+              html`<span className="agent-history-preview">${preview}</span>`}
+            </button>
+            ${isOpen &&
+            html`<div className="agent-history-body">
+              <pre>${entry.text || "(empty)"}</pre>
+            </div>`}
+          </div>
+        `;
+      })}
+    </div>
+  `;
+};
+
+const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
   const [copied, setCopied] = React.useState(false);
+  const [tab, setTab] = React.useState("context");
+
+  // Reset tab when agent changes
+  React.useEffect(() => {
+    setTab("context");
+  }, [agent]);
 
   if (!agent) return null;
 
-  const rawText =
+  const contextText =
     status.contextPct != null
       ? `Context: ${status.contextUsed} / ${status.contextTotal} tokens (${status.contextPct}%)\nAvailable: ${status.contextTotal - status.contextUsed} tokens\nStatus: ${status.status}`
       : `Status: ${status.status}\nNo context data available`;
@@ -19,14 +93,34 @@ const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
       ? `\n\nPrevious run:\nContext: ${prevStatus.contextUsed} / ${prevStatus.contextTotal} tokens (${prevStatus.contextPct}%)\nStatus: ${prevStatus.status}`
       : "";
 
-  const fullText = rawText + prevText;
+  const getTabContent = () => {
+    if (tab === "system") return prompts?.systemPrompt || null;
+    if (tab === "history") return null; // handled separately
+    return contextText + prevText;
+  };
+
+  const tabContent = getTabContent();
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(fullText);
+    let text;
+    if (tab === "history") {
+      let pNum = 0;
+      let aNum = 0;
+      text = (prompts?.history || [])
+        .map((entry) => {
+          const label =
+            entry.role === "user" ? `PROMPT #${++pNum}` : `ANSWER #${++aNum}`;
+          return `[${label} ${entry.timestamp}]\n${entry.text}\n---`;
+        })
+        .join("\n");
+    } else {
+      text = tabContent || "";
+    }
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -54,17 +148,46 @@ const AgentDetailModal = ({ agent, status, prevStatus, onClose }) => {
             </button>
           </div>
         </div>
+        <div className="agent-modal-tabs">
+          <button
+            className="agent-modal-tab ${tab === "context" ? "active" : ""}"
+            onClick=${() => setTab("context")}
+          >
+            Context
+          </button>
+          <button
+            className="agent-modal-tab ${tab === "system" ? "active" : ""}"
+            onClick=${() => setTab("system")}
+          >
+            System
+          </button>
+          <button
+            className="agent-modal-tab ${tab === "history" ? "active" : ""}"
+            onClick=${() => setTab("history")}
+          >
+            History
+          </button>
+        </div>
         <div className="activity-modal-body">
-          ${rawText}
+          ${tab === "context" &&
+          html`${contextText}
           ${prevText &&
-          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}
+          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}`}
+          ${tab === "system" &&
+          (prompts?.systemPrompt
+            ? html`${prompts.systemPrompt}`
+            : html`<div className="agent-modal-empty">
+                No prompt captured yet
+              </div>`)}
+          ${tab === "history" &&
+          html`<${HistoryAccordion} history=${prompts?.history} />`}
         </div>
       </div>
     </div>
   `;
 };
 
-export const AgentStatus = ({ statuses, prevStatuses }) => {
+export const AgentStatus = ({ statuses, prevStatuses, prompts }) => {
   const [selectedAgent, setSelectedAgent] = React.useState(null);
 
   return html`
@@ -104,6 +227,7 @@ export const AgentStatus = ({ statuses, prevStatuses }) => {
       agent=${selectedAgent}
       status=${statuses[selectedAgent] || { status: "idle" }}
       prevStatus=${prevStatuses?.[selectedAgent]}
+      prompts=${prompts?.[selectedAgent]}
       onClose=${() => setSelectedAgent(null)}
     />
   `;

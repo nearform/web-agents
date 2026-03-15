@@ -198,6 +198,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     emit = () => {},
     agentName = "agent",
     onContextUpdate,
+    onAgentPrompt,
     signal,
   } = options;
 
@@ -242,6 +243,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
       `Result token budget: ${effectiveMaxResultTokens} (available: ${budget.available}, cap: ${maxResultTokens})`,
     );
 
+    if (onAgentPrompt) onAgentPrompt(agentName, "user", currentMessage);
     emit("prompt", {
       summary: `Sending message (iteration ${i + 1})`,
       prompt: currentMessage,
@@ -277,6 +279,7 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
     debug(agentName, `=== RAW OUTPUT (iteration ${i + 1}) ===\n` + raw);
+    if (onAgentPrompt) onAgentPrompt(agentName, "answer", raw);
 
     let response;
     try {

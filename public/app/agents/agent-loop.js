@@ -47,12 +47,14 @@ export const runAgentLoop = async ({
   onActivity,
   agentName,
   onContextUpdate,
+  onAgentPrompt,
   signal,
 }) => {
   const emit = createEmitter(agentName, onActivity);
 
   emit("start", `${agentName} starting`);
   debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
+  if (onAgentPrompt) onAgentPrompt(agentName, "system", systemPrompt);
   emit("prompt", {
     summary: `${agentName} system prompt`,
     prompt: systemPrompt,
@@ -73,6 +75,7 @@ export const runAgentLoop = async ({
         emit,
         agentName,
         onContextUpdate,
+        onAgentPrompt,
         signal,
       },
     );

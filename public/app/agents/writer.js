@@ -40,6 +40,7 @@ export const runWriter = async ({
   onStreamChunk,
   onNotepadStreamChunk,
   onAgentStatus,
+  onAgentPrompt,
   signal,
 }) => {
   const emit = createEmitter("Writer", onActivity);
@@ -58,6 +59,7 @@ export const runWriter = async ({
   const writerSystemPrompt = getWriterSystemPrompt(originalQuery, lastUserMsg);
 
   emit("start", "Writer starting");
+  if (onAgentPrompt) onAgentPrompt("Writer", "system", writerSystemPrompt);
   emit("prompt", {
     summary: "Writer system prompt",
     prompt: writerSystemPrompt,
@@ -103,6 +105,7 @@ If the notepad doesn't contain enough information to answer, say so rather than 
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.`;
 
+    if (onAgentPrompt) onAgentPrompt("Writer", "user", chatPrompt);
     emit("prompt", {
       summary: "Composing chat reply from existing research",
       prompt: chatPrompt,
@@ -131,6 +134,7 @@ Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXA
     }
 
     debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+    if (onAgentPrompt) onAgentPrompt("Writer", "answer", chatReply);
 
     session.destroy();
     reportStatus("done");
@@ -177,6 +181,7 @@ ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
 User request: ${originalQuery}`;
   }
 
+  if (onAgentPrompt) onAgentPrompt("Writer", "user", contentPrompt);
   emit("prompt", {
     summary: "Composing notepad content",
     prompt: contentPrompt,
@@ -210,6 +215,7 @@ User request: ${originalQuery}`;
   }
 
   debug("Writer", "=== NOTEPAD CONTENT ===\n" + notepadContent);
+  if (onAgentPrompt) onAgentPrompt("Writer", "answer", notepadContent);
 
   // Write to notepad
   emit("tool-call", { name: "take_notes", args: {} });
@@ -218,6 +224,7 @@ User request: ${originalQuery}`;
 
   // Generate chat reply
   const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Each URL must appear only once — never repeat the same link. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
+  if (onAgentPrompt) onAgentPrompt("Writer", "user", chatReplyPrompt);
   emit("prompt", { summary: "Composing chat reply", prompt: chatReplyPrompt });
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const chatReply = await promptSessionStreaming(
@@ -227,6 +234,7 @@ User request: ${originalQuery}`;
     { signal },
   );
   debug("Writer", "=== CHAT REPLY ===\n" + chatReply);
+  if (onAgentPrompt) onAgentPrompt("Writer", "answer", chatReply);
 
   session.destroy();
   reportStatus("done");
