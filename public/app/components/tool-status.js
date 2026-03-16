@@ -8,8 +8,6 @@ const buildInitialArgs = (schema) => {
   if (!schema?.properties) return args;
   for (const [key, prop] of Object.entries(schema.properties)) {
     if (prop.type === "boolean") args[key] = false;
-    else if (prop.type === "number" || prop.type === "integer") args[key] = "";
-    else args[key] = "";
   }
   return args;
 };
@@ -49,6 +47,14 @@ const ToolDetailModal = ({ tool, onClose }) => {
     }));
   };
 
+  const isRequiredMissing = (key, prop) => {
+    if (!required.includes(key)) return false;
+    if (prop.type === "boolean") return false;
+    const val = args[key];
+    if (prop.type === "string") return val === undefined;
+    return val === "" || val === undefined;
+  };
+
   const handleExecute = async () => {
     setLoading(true);
     setResult(null);
@@ -56,12 +62,16 @@ const ToolDetailModal = ({ tool, onClose }) => {
       const parsed = {};
       for (const [key, prop] of Object.entries(properties)) {
         const val = args[key];
-        if (val === "" || val === undefined) continue;
-        if (prop.type === "number" || prop.type === "integer") {
+        if (prop.type === "string") {
+          if (val === undefined) continue;
+          parsed[key] = val;
+        } else if (prop.type === "number" || prop.type === "integer") {
+          if (val === "" || val === undefined) continue;
           parsed[key] = Number(val);
         } else if (prop.type === "boolean") {
           parsed[key] = val;
         } else {
+          if (val === "" || val === undefined) continue;
           parsed[key] = val;
         }
       }
@@ -74,7 +84,11 @@ const ToolDetailModal = ({ tool, onClose }) => {
     }
   };
 
-  const canExecute = tool.connected !== false && !loading;
+  const hasValidationErrors = propEntries.some(([key, prop]) =>
+    isRequiredMissing(key, prop),
+  );
+  const canExecute =
+    tool.connected !== false && !loading && !hasValidationErrors;
 
   return html`
     <div className="activity-modal-overlay" onClick=${handleOverlayClick}>
