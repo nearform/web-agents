@@ -9,7 +9,7 @@ import { debug } from "../util/debug.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
 import { getWriterSystemPrompt } from "./prompts.js";
-import { formatChatHistory } from "../util/chat-history.js";
+import { formatChatHistory, splitChatHistory } from "../util/chat-history.js";
 
 const truncateHalf = (text) => {
   if (!text) return text;
@@ -81,17 +81,19 @@ export const runWriter = async ({
     // Chat-only mode: notepad stays untouched, produce answer from notepad context
     debug("Writer", "skipNotepadWrite=true — chat-only mode");
 
-    const history = formatChatHistory(chatHistory);
-    const chatPrompt = `Answer the user's specific question directly and concisely using the research notepad below as your source material.
+    const { earlier, lastResponse } = splitChatHistory(chatHistory);
+    const hasConversation = earlier || lastResponse;
+
+    const chatPrompt = `${hasConversation ? "You are continuing a conversation. The user may be asking you to refine, edit, or build on your previous response — follow their instructions precisely.\n\n" : ""}Answer the user's request using the research notepad below as your source material.
 IMPORTANT: ONLY use URLs that appear in the research notepad below. Do NOT invent or guess URLs.
-${history ? `\nConversation so far:\n${history}\n` : ""}
-User's latest request: ${originalQuery}
 
 Research notepad:
 ${existingNotepad}
+${earlier ? `\nEarlier conversation:\n${earlier}\n` : ""}${lastResponse ? `\nYour previous response:\n${lastResponse}\n` : ""}
+User's latest request: ${originalQuery}
 
-Do NOT summarize the entire notepad — extract only what's relevant to the question.
-If the notepad doesn't contain enough information to answer, say so rather than guessing.
+Do NOT summarize the entire notepad — extract only what's relevant to the request.
+${hasConversation ? "If the user asks you to modify, shorten, or refine your previous response, do exactly that — edit the previous response as instructed rather than generating a new answer from scratch.\n" : ""}If the notepad doesn't contain enough information to answer, say so rather than guessing.
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.`;
 
@@ -148,23 +150,23 @@ Maintain the structure (Summary, Posts). Add a Citations section with deduplicat
 - Deduplicate URLs across old and new content. Each URL must appear only once — keep each link where it's most relevant.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
 - Do NOT include the "Verified URLs" section in your output — it is internal only.
-${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
-User's follow-up query: ${originalQuery}
 
 Existing notepad content:
 ${existingNotepad}
 
 New research findings:
-${researchBrief}`;
+${researchBrief}
+${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
+User's follow-up query: ${originalQuery}`;
   } else if (hasResearch) {
     contentPrompt = `Format the research findings into a clean notepad. Preserve the researcher's structure and content faithfully. Clean up formatting and deduplicate URLs. Each URL must appear only once in the entire document — cite each source where it's most relevant and don't repeat it.
 - A "Verified URLs" section may be appended to the research. Only use URLs from that list. If a URL in the prose doesn't match the verified list, replace it with the correct one or omit it.
 - Do NOT include the "Verified URLs" section in your output — it is internal only.
-${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
-Original question: ${originalQuery}
 
 Research findings:
-${researchBrief}`;
+${researchBrief}
+${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}
+Original question: ${originalQuery}`;
   } else {
     contentPrompt = `Write a research summary for the notepad based on the user's question.
 ${historyFull ? `\nConversation so far:\n${historyFull}\n` : ""}

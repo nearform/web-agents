@@ -67,3 +67,64 @@ export const formatChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
   // Single message over budget — truncate at a clean boundary
   return truncateClean(formatted[0], maxChars);
 };
+
+/**
+ * Split chat history into earlier conversation and the last assistant
+ * response, for prompts where the previous response needs to be a
+ * first-class edit target.
+ *
+ * @param {Array<{role: string, text: string}>} chatHistory
+ * @param {object} [opts]
+ * @param {number} [opts.maxChars=12000] Budget for earlier history
+ * @returns {{ earlier: string, lastResponse: string }}
+ */
+export const splitChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
+  if (!chatHistory || chatHistory.length < 2) {
+    return { earlier: "", lastResponse: "" };
+  }
+
+  // Exclude current user query
+  const prior = chatHistory.slice(0, -1);
+
+  // Find last assistant message
+  let lastAssistantIdx = -1;
+  for (let i = prior.length - 1; i >= 0; i--) {
+    if (prior[i].role === "assistant") {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+
+  if (lastAssistantIdx === -1) {
+    return {
+      earlier: formatChatHistory(chatHistory, { maxChars }),
+      lastResponse: "",
+    };
+  }
+
+  const lastResponse = prior[lastAssistantIdx].text;
+
+  // Format everything before the last assistant message as earlier history
+  const olderMessages = prior.slice(0, lastAssistantIdx);
+  if (olderMessages.length === 0) {
+    return { earlier: "", lastResponse };
+  }
+
+  const formatted = olderMessages.map(
+    (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`,
+  );
+
+  let joined = formatted.join("\n");
+  if (joined.length <= maxChars) {
+    return { earlier: joined, lastResponse };
+  }
+
+  // Over budget: drop oldest
+  while (formatted.length > 1) {
+    formatted.shift();
+    joined = formatted.join("\n");
+    if (joined.length <= maxChars) return { earlier: joined, lastResponse };
+  }
+
+  return { earlier: truncateClean(formatted[0], maxChars), lastResponse };
+};
