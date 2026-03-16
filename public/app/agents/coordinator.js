@@ -10,6 +10,7 @@ import {
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
 import { getTriageSystemPrompt } from "./prompts.js";
+import { formatChatHistory } from "../util/chat-history.js";
 
 const TRIAGE_SCHEMA = {
   type: "object",
@@ -17,17 +18,6 @@ const TRIAGE_SCHEMA = {
     needs_research: { type: "boolean" },
   },
   required: ["needs_research"],
-};
-
-const formatChatHistory = (chatHistory, maxPairs = 3) => {
-  if (!chatHistory || chatHistory.length === 0) return "";
-  const recent = chatHistory.slice(-maxPairs * 2);
-  return recent
-    .map(
-      (m) =>
-        `${m.role === "user" ? "User" : "Assistant"}: ${m.text.slice(0, 200)}`,
-    )
-    .join("\n");
 };
 
 const truncateHalf = (text) => {
@@ -96,7 +86,7 @@ async function triageFollowUp(
   if (onAgentPrompt) onAgentPrompt("Coordinator", "system", triageSystemPrompt);
   const session = await createSession(triageSystemPrompt);
   try {
-    const history = formatChatHistory(chatHistory);
+    const history = formatChatHistory(chatHistory, { maxChars: 1500 });
     const outline =
       extractNotepadOutline(existingNotepad) || existingNotepad.slice(0, 1500);
     const prompt = `Existing notepad outline:\n${outline}${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
@@ -308,7 +298,7 @@ async function runCoordinatorPipeline({
           existingNotepad: existingNotepad
             ? truncateHalf(existingNotepad)
             : undefined,
-          chatHistory: chatHistory ? chatHistory.slice(-2) : chatHistory,
+          chatHistory: chatHistory ? chatHistory.slice(-4) : chatHistory,
           skipNotepadWrite,
           onStreamChunk,
           onNotepadStreamChunk,

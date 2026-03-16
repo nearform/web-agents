@@ -49,6 +49,8 @@ const INITIAL_AGENT_STATUSES = {
 
 export const App = () => {
   const [messages, setMessages] = React.useState([]);
+  const messagesRef = React.useRef(messages);
+  messagesRef.current = messages;
   const [activities, setActivities] = React.useState([]);
   const [notepadContent, setNotepadContent] = React.useState("");
   const [tools, setTools] = React.useState([]);
@@ -224,11 +226,9 @@ export const App = () => {
 
   const handleSend = React.useCallback(
     (text) => {
-      let updatedMessages;
-      setMessages((prev) => {
-        updatedMessages = [...prev, { role: "user", text }];
-        return updatedMessages;
-      });
+      const updatedMessages = [...messagesRef.current, { role: "user", text }];
+      messagesRef.current = updatedMessages;
+      setMessages(updatedMessages);
       executeCoordinator(text, notepadContent || undefined, updatedMessages);
     },
     [notepadContent, executeCoordinator],
