@@ -28,8 +28,8 @@ export const notepadTools = [
       required: ["content"],
     },
     execute: async ({ content } = {}) => {
-      if (content === undefined) {
-        return { success: false, error: "content is required" };
+      if (typeof content !== "string") {
+        return { success: false, error: "content must be a string" };
       }
       updateNotepad(content);
       return { success: true, notepadLength: content.length };

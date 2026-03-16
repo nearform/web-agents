@@ -53,9 +53,8 @@ const ToolDetailModal = ({ tool, onClose }) => {
     if (!required.includes(key)) return false;
     if (prop.type === "boolean") return false;
     const val = args[key];
-    if (prop.type === "number" || prop.type === "integer")
-      return val === "" || val === undefined;
-    return val === undefined;
+    if (prop.type === "string") return val === undefined;
+    return val === "" || val === undefined;
   };
 
   const handleExecute = async () => {
@@ -65,17 +64,15 @@ const ToolDetailModal = ({ tool, onClose }) => {
       const parsed = {};
       for (const [key, prop] of Object.entries(properties)) {
         const val = args[key];
-        if (val === undefined || val === "") {
-          if (prop.type === "string" && required.includes(key)) {
-            parsed[key] = val ?? "";
-          }
-          continue;
-        }
-        if (prop.type === "number" || prop.type === "integer") {
+        if (prop.type === "string") {
+          parsed[key] = val ?? "";
+        } else if (prop.type === "number" || prop.type === "integer") {
+          if (val === "" || val === undefined) continue;
           parsed[key] = Number(val);
         } else if (prop.type === "boolean") {
           parsed[key] = val;
         } else {
+          if (val === "" || val === undefined) continue;
           parsed[key] = val;
         }
       }
