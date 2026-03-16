@@ -520,7 +520,7 @@ body {
 .activity-feed {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 16px;
 }
 
 .activity-entry {

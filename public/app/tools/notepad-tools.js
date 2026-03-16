@@ -28,7 +28,7 @@ export const notepadTools = [
       required: ["content"],
     },
     execute: async ({ content } = {}) => {
-      if (!content) {
+      if (content === undefined) {
         return { success: false, error: "content is required" };
       }
       updateNotepad(content);
@@ -36,15 +36,14 @@ export const notepadTools = [
     },
   },
   {
-    name: "clear_notes",
-    description: "Clear all content from the shared notepad.",
+    name: "read_notes",
+    description: "Read the current content of the shared notepad.",
     inputSchema: {
       type: "object",
       properties: {},
     },
     execute: async () => {
-      updateNotepad("");
-      return { success: true };
+      return { success: true, content: getNotepadContent() };
     },
   },
 ];

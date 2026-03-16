@@ -94,13 +94,6 @@ export const NotepadPanel = ({
           </div>
         `}
       </div>
-      ${!content &&
-      html`
-        <div className="notepad-description">
-          Research findings will appear here. You can edit them to refine
-          context for follow-up queries.
-        </div>
-      `}
       <div className="notepad-content">
         ${editing
           ? html`<textarea
@@ -115,7 +108,8 @@ export const NotepadPanel = ({
               />`
             : html`
                 <div className="notepad-empty">
-                  Research findings will appear here once you ask a question.
+                  Research findings will appear here. You can edit them to
+                  refine context for follow-up queries.
                 </div>
               `}
       </div>

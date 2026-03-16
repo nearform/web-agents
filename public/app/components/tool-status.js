@@ -56,7 +56,8 @@ const ToolDetailModal = ({ tool, onClose }) => {
       const parsed = {};
       for (const [key, prop] of Object.entries(properties)) {
         const val = args[key];
-        if (val === "" || val === undefined) continue;
+        if (val === undefined) continue;
+        if (val === "" && !required.includes(key)) continue;
         if (prop.type === "number" || prop.type === "integer") {
           parsed[key] = Number(val);
         } else if (prop.type === "boolean") {
