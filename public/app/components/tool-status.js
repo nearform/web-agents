@@ -49,6 +49,15 @@ const ToolDetailModal = ({ tool, onClose }) => {
     }));
   };
 
+  const isRequiredMissing = (key, prop) => {
+    if (!required.includes(key)) return false;
+    if (prop.type === "boolean") return false;
+    const val = args[key];
+    if (prop.type === "number" || prop.type === "integer")
+      return val === "" || val === undefined;
+    return val === undefined;
+  };
+
   const handleExecute = async () => {
     setLoading(true);
     setResult(null);
@@ -56,8 +65,12 @@ const ToolDetailModal = ({ tool, onClose }) => {
       const parsed = {};
       for (const [key, prop] of Object.entries(properties)) {
         const val = args[key];
-        if (val === undefined) continue;
-        if (val === "" && !required.includes(key)) continue;
+        if (val === undefined || val === "") {
+          if (prop.type === "string" && required.includes(key)) {
+            parsed[key] = val ?? "";
+          }
+          continue;
+        }
         if (prop.type === "number" || prop.type === "integer") {
           parsed[key] = Number(val);
         } else if (prop.type === "boolean") {
@@ -75,7 +88,11 @@ const ToolDetailModal = ({ tool, onClose }) => {
     }
   };
 
-  const canExecute = tool.connected !== false && !loading;
+  const hasValidationErrors = propEntries.some(([key, prop]) =>
+    isRequiredMissing(key, prop),
+  );
+  const canExecute =
+    tool.connected !== false && !loading && !hasValidationErrors;
 
   return html`
     <div className="activity-modal-overlay" onClick=${handleOverlayClick}>
