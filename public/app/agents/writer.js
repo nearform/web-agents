@@ -9,17 +9,7 @@ import { debug } from "../util/debug.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
 import { getWriterSystemPrompt } from "./prompts.js";
-
-const formatChatHistory = (chatHistory, maxPairs = 3) => {
-  if (!chatHistory || chatHistory.length === 0) return "";
-  const recent = chatHistory.slice(-maxPairs * 2);
-  return recent
-    .map(
-      (m) =>
-        `${m.role === "user" ? "User" : "Assistant"}: ${m.text.slice(0, 200)}`,
-    )
-    .join("\n");
-};
+import { formatChatHistory } from "../util/chat-history.js";
 
 const truncateHalf = (text) => {
   if (!text) return text;

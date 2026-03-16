@@ -224,14 +224,11 @@ export const App = () => {
 
   const handleSend = React.useCallback(
     (text) => {
-      let updatedMessages;
-      setMessages((prev) => {
-        updatedMessages = [...prev, { role: "user", text }];
-        return updatedMessages;
-      });
+      const updatedMessages = [...messages, { role: "user", text }];
+      setMessages(updatedMessages);
       executeCoordinator(text, notepadContent || undefined, updatedMessages);
     },
-    [notepadContent, executeCoordinator],
+    [messages, notepadContent, executeCoordinator],
   );
 
   const streamingTextRef = React.useRef(null);
