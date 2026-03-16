@@ -9,11 +9,13 @@ const truncateClean = (text, maxLen) => {
   const region = text.slice(0, maxLen);
 
   // Prefer the last sentence boundary (. ! ?) followed by whitespace or end
-  const sentenceEnd = region.search(/[.!?][)\]"']*\s[^]*$/);
-  if (sentenceEnd > maxLen * 0.3) {
-    // Include the punctuation itself
-    const end = region.indexOf(" ", sentenceEnd + 1);
-    return text.slice(0, end === -1 ? sentenceEnd + 1 : end).trimEnd() + "…";
+  const sentenceMatches = [...region.matchAll(/[.!?][)\]"']*(?:\s|$)/g)];
+  const lastSentence = sentenceMatches.length
+    ? sentenceMatches[sentenceMatches.length - 1]
+    : null;
+  if (lastSentence && lastSentence.index > maxLen * 0.3) {
+    const cut = lastSentence.index + lastSentence[0].trimEnd().length;
+    return text.slice(0, cut).trimEnd() + "…";
   }
 
   // Fall back to last newline

@@ -49,6 +49,8 @@ const INITIAL_AGENT_STATUSES = {
 
 export const App = () => {
   const [messages, setMessages] = React.useState([]);
+  const messagesRef = React.useRef(messages);
+  messagesRef.current = messages;
   const [activities, setActivities] = React.useState([]);
   const [notepadContent, setNotepadContent] = React.useState("");
   const [tools, setTools] = React.useState([]);
@@ -224,11 +226,11 @@ export const App = () => {
 
   const handleSend = React.useCallback(
     (text) => {
-      const updatedMessages = [...messages, { role: "user", text }];
+      const updatedMessages = [...messagesRef.current, { role: "user", text }];
       setMessages(updatedMessages);
       executeCoordinator(text, notepadContent || undefined, updatedMessages);
     },
-    [messages, notepadContent, executeCoordinator],
+    [notepadContent, executeCoordinator],
   );
 
   const streamingTextRef = React.useRef(null);
