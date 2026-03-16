@@ -8,8 +8,6 @@ const buildInitialArgs = (schema) => {
   if (!schema?.properties) return args;
   for (const [key, prop] of Object.entries(schema.properties)) {
     if (prop.type === "boolean") args[key] = false;
-    else if (prop.type === "number" || prop.type === "integer") args[key] = "";
-    else args[key] = "";
   }
   return args;
 };
@@ -65,7 +63,8 @@ const ToolDetailModal = ({ tool, onClose }) => {
       for (const [key, prop] of Object.entries(properties)) {
         const val = args[key];
         if (prop.type === "string") {
-          parsed[key] = val ?? "";
+          if (val === undefined) continue;
+          parsed[key] = val;
         } else if (prop.type === "number" || prop.type === "integer") {
           if (val === "" || val === undefined) continue;
           parsed[key] = Number(val);

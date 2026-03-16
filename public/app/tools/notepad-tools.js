@@ -22,12 +22,16 @@ export const notepadTools = [
       properties: {
         content: {
           type: "string",
-          description: "The text content to write to the notepad",
+          description:
+            "The text content to write to the notepad. Pass an empty string to clear.",
         },
       },
       required: ["content"],
     },
     execute: async ({ content } = {}) => {
+      if (content === undefined) {
+        return { success: false, error: "content is required" };
+      }
       if (typeof content !== "string") {
         return { success: false, error: "content must be a string" };
       }
