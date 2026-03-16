@@ -34,6 +34,29 @@ const truncateClean = (text, maxLen) => {
 };
 
 /**
+ * Format an array of pre-formatted message strings, keeping only the most
+ * recent entries that fit within maxChars. Single walk from the end — O(n).
+ */
+const joinRecentWithinBudget = (formatted, maxChars) => {
+  // Walk from the end, accumulating lengths (+ 1 for "\n" separator)
+  let total = 0;
+  let startIdx = formatted.length;
+  for (let i = formatted.length - 1; i >= 0; i--) {
+    const added = formatted[i].length + (i < formatted.length - 1 ? 1 : 0);
+    if (total + added > maxChars) break;
+    total += added;
+    startIdx = i;
+  }
+
+  if (startIdx < formatted.length) {
+    return formatted.slice(startIdx).join("\n");
+  }
+
+  // Single message over budget — truncate at a clean boundary
+  return truncateClean(formatted[formatted.length - 1], maxChars);
+};
+
+/**
  * Format chat history for inclusion in agent prompts.
  *
  * Excludes the last message (the current user query, passed separately as
@@ -54,18 +77,10 @@ export const formatChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
     (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`,
   );
 
-  let joined = formatted.join("\n");
+  const joined = formatted.join("\n");
   if (joined.length <= maxChars) return joined;
 
-  // Over budget: drop oldest messages until it fits
-  while (formatted.length > 1) {
-    formatted.shift();
-    joined = formatted.join("\n");
-    if (joined.length <= maxChars) return joined;
-  }
-
-  // Single message over budget — truncate at a clean boundary
-  return truncateClean(formatted[0], maxChars);
+  return joinRecentWithinBudget(formatted, maxChars);
 };
 
 /**
@@ -75,7 +90,7 @@ export const formatChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
  *
  * @param {Array<{role: string, text: string}>} chatHistory
  * @param {object} [opts]
- * @param {number} [opts.maxChars=12000] Budget for earlier history
+ * @param {number} [opts.maxChars=12000] Combined budget for last response + earlier history
  * @returns {{ earlier: string, lastResponse: string }}
  */
 export const splitChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
@@ -102,11 +117,18 @@ export const splitChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
     };
   }
 
-  const lastResponse = prior[lastAssistantIdx].text;
+  // Last response gets priority — it's the active edit target
+  const rawResponse = prior[lastAssistantIdx].text;
+  const lastResponse =
+    rawResponse.length <= maxChars
+      ? rawResponse
+      : truncateClean(rawResponse, maxChars);
 
-  // Format everything before the last assistant message as earlier history
+  // Remaining budget goes to earlier history
+  const earlierBudget = maxChars - lastResponse.length;
+
   const olderMessages = prior.slice(0, lastAssistantIdx);
-  if (olderMessages.length === 0) {
+  if (olderMessages.length === 0 || earlierBudget <= 0) {
     return { earlier: "", lastResponse };
   }
 
@@ -114,17 +136,13 @@ export const splitChatHistory = (chatHistory, { maxChars = 12000 } = {}) => {
     (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`,
   );
 
-  let joined = formatted.join("\n");
-  if (joined.length <= maxChars) {
+  const joined = formatted.join("\n");
+  if (joined.length <= earlierBudget) {
     return { earlier: joined, lastResponse };
   }
 
-  // Over budget: drop oldest
-  while (formatted.length > 1) {
-    formatted.shift();
-    joined = formatted.join("\n");
-    if (joined.length <= maxChars) return { earlier: joined, lastResponse };
-  }
-
-  return { earlier: truncateClean(formatted[0], maxChars), lastResponse };
+  return {
+    earlier: joinRecentWithinBudget(formatted, earlierBudget),
+    lastResponse,
+  };
 };
