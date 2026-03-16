@@ -5,28 +5,31 @@
  */
 const truncateClean = (text, maxLen) => {
   if (text.length <= maxLen) return text;
+  if (maxLen <= 1) return "…";
 
-  const region = text.slice(0, maxLen);
+  // Reserve 1 char for the ellipsis so output never exceeds maxLen
+  const budget = maxLen - 1;
+  const region = text.slice(0, budget);
 
   // Prefer the last sentence boundary (. ! ?) followed by whitespace or end
   const sentenceMatches = [...region.matchAll(/[.!?][)\]"']*(?:\s|$)/g)];
   const lastSentence = sentenceMatches.length
     ? sentenceMatches[sentenceMatches.length - 1]
     : null;
-  if (lastSentence && lastSentence.index > maxLen * 0.3) {
+  if (lastSentence && lastSentence.index > budget * 0.3) {
     const cut = lastSentence.index + lastSentence[0].trimEnd().length;
     return text.slice(0, cut).trimEnd() + "…";
   }
 
   // Fall back to last newline
   const newlineEnd = region.lastIndexOf("\n");
-  if (newlineEnd > maxLen * 0.3) {
+  if (newlineEnd > budget * 0.3) {
     return text.slice(0, newlineEnd).trimEnd() + "…";
   }
 
   // Last resort: cut at last space (avoids mid-word / mid-URL)
   const spaceEnd = region.lastIndexOf(" ");
-  if (spaceEnd > maxLen * 0.3) {
+  if (spaceEnd > budget * 0.3) {
     return text.slice(0, spaceEnd).trimEnd() + "…";
   }
 
