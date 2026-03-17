@@ -71,7 +71,7 @@
       import { App } from "./app/index.js";
       import { initializeWebMCPPolyfill } from "@mcp-b/webmcp-polyfill";
 
-      initializeWebMCPPolyfill();
+      initializeWebMCPPolyfill({ installTestingShim: true });
       const html = htm.bind(createElement);
       const root = createRoot(document.getElementById("root"));
       root.render(html`<${App} />`);

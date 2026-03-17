@@ -4,7 +4,7 @@ import {
   discoverTools,
   callTool as callRemoteTool,
 } from "./iframe-bridge.js";
-import { notepadTools } from "../tools/notepad-tools.js";
+import { TOOLS } from "../tools/index.js";
 import { debug } from "../util/debug.js";
 
 let remoteTools = [];
@@ -37,7 +37,7 @@ export const listTools = () => {
     source: "remote",
     connected,
   }));
-  const local = notepadTools.map((t) => ({
+  const local = TOOLS.map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.inputSchema,
@@ -47,13 +47,25 @@ export const listTools = () => {
   return [...remote, ...local];
 };
 
+// Unwrap MCP tool result: parse the JSON-encoded result, then extract the text payload
+const unwrapContent = (result) => {
+  const parsed = typeof result === "string" ? JSON.parse(result) : result;
+  const text = parsed?.content?.[0]?.text;
+  return text ? JSON.parse(text) : parsed;
+};
+
 export const callTool = async (name, args) => {
   debug("tool-registry", "callTool:", name, args);
-  const localTool = notepadTools.find((t) => t.name === name);
+  const localTool = TOOLS.find((t) => t.name === name);
   if (localTool) {
-    const result = await localTool.execute(args);
+    // Invoke with `modelContextTesting` to gut check tooling invocation.
+    // Could call directly if we wanted, but checks for future compliance.
+    const result = await navigator.modelContextTesting.executeTool(
+      localTool.name,
+      JSON.stringify(args),
+    );
     debug("tool-registry", "Local tool result:", name, result);
-    return result;
+    return unwrapContent(result);
   }
 
   const remoteTool = remoteTools.find((t) => t.name === name);
@@ -67,21 +79,8 @@ export const callTool = async (name, args) => {
 const registerLocalToolsWithWebMcp = () => {
   if (!("modelContext" in navigator)) return;
 
-  for (const tool of notepadTools) {
-    navigator.modelContext.registerTool({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-      annotations: { readOnlyHint: false },
-      execute: async (input) => ({
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(await tool.execute(input)),
-          },
-        ],
-      }),
-    });
+  for (const tool of TOOLS) {
+    navigator.modelContext.registerTool(tool);
   }
   debug.info("tool-registry", "Registered local tools with WebMCP");
 };
