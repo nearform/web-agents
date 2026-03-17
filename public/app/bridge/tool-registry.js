@@ -47,17 +47,23 @@ export const listTools = () => {
   return [...remote, ...local];
 };
 
-// Unwrap MCP content array → parse the JSON text payload
+// Unwrap MCP tool result: parse the JSON-encoded result, then extract the text payload
 const unwrapContent = (result) => {
-  const text = result?.content?.[0]?.text;
-  return text ? JSON.parse(text) : result;
+  const parsed = typeof result === "string" ? JSON.parse(result) : result;
+  const text = parsed?.content?.[0]?.text;
+  return text ? JSON.parse(text) : parsed;
 };
 
 export const callTool = async (name, args) => {
   debug("tool-registry", "callTool:", name, args);
   const localTool = TOOLS.find((t) => t.name === name);
   if (localTool) {
-    const result = await localTool.execute(args);
+    // Invoke with `modelContextTesting` to gut check tooling invocation.
+    // Could call directly if we wanted, but checks for future compliance.
+    const result = await navigator.modelContextTesting.executeTool(
+      localTool.name,
+      JSON.stringify(args),
+    );
     debug("tool-registry", "Local tool result:", name, result);
     return unwrapContent(result);
   }
