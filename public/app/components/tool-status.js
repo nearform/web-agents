@@ -1,7 +1,8 @@
 /* global navigator:false, setTimeout:false */
-import { html } from "../util/html.js";
 import React from "react";
+import { html } from "../util/html.js";
 import { callTool } from "../bridge/tool-registry.js";
+import { debug } from "../util/debug.js";
 
 const buildInitialArgs = (schema) => {
   const args = {};
@@ -78,6 +79,7 @@ const ToolDetailModal = ({ tool, onClose }) => {
       const res = await callTool(tool.name, parsed);
       setResult({ ok: true, data: res });
     } catch (err) {
+      debug.error("tool-call", "Tool execution error:", err);
       setResult({ ok: false, data: err.message });
     } finally {
       setLoading(false);

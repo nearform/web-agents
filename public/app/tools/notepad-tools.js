@@ -12,6 +12,10 @@ export const updateNotepad = (content) => {
   if (notepadCallback) notepadCallback(content);
 };
 
+const jsonContent = (payload) => ({
+  content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+});
+
 export const notepadTools = [
   {
     name: "take_notes",
@@ -28,15 +32,19 @@ export const notepadTools = [
       },
       required: ["content"],
     },
+    annotations: { readOnlyHint: false },
     execute: async ({ content } = {}) => {
       if (content === undefined) {
-        return { success: false, error: "content is required" };
+        return jsonContent({ success: false, error: "content is required" });
       }
       if (typeof content !== "string") {
-        return { success: false, error: "content must be a string" };
+        return jsonContent({
+          success: false,
+          error: "content must be a string",
+        });
       }
       updateNotepad(content);
-      return { success: true, notepadLength: content.length };
+      return jsonContent({ success: true, notepadLength: content.length });
     },
   },
   {
@@ -46,8 +54,9 @@ export const notepadTools = [
       type: "object",
       properties: {},
     },
+    annotations: { readOnlyHint: true },
     execute: async () => {
-      return { success: true, content: getNotepadContent() };
+      return jsonContent({ success: true, content: getNotepadContent() });
     },
   },
 ];
