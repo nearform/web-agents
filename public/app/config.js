@@ -26,6 +26,7 @@ export const config = {
     maxExcerptChars: 400,
     maxCoordinatorRetries: 1,
   },
+  deepLinkTool: params.get("tool") || null,
   context: {
     warnPct: 80,
     criticalPct: 90,

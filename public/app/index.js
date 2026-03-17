@@ -7,6 +7,7 @@ import { NotepadPanel } from "./components/notepad-panel.js";
 import { ToolStatus } from "./components/tool-status.js";
 import { AgentStatus } from "./components/agent-status.js";
 import { initRegistry, listTools } from "./bridge/tool-registry.js";
+import { config } from "./config.js";
 import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
@@ -371,7 +372,7 @@ export const App = () => {
           prevStatuses=${prevAgentStatuses}
           prompts=${agentPrompts}
         />
-        <${ToolStatus} tools=${tools} />
+        <${ToolStatus} tools=${tools} deepLinkTool=${config.deepLinkTool} />
       </div>
 
       ${showPlatformModal &&

@@ -251,8 +251,18 @@ ${result == null
   `;
 };
 
-export const ToolStatus = ({ tools }) => {
+export const ToolStatus = ({ tools, deepLinkTool }) => {
   const [selectedTool, setSelectedTool] = React.useState(null);
+  const deepLinkFired = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!deepLinkTool || deepLinkFired.current || tools.length === 0) return;
+    const match = tools.find((t) => t.name === deepLinkTool);
+    if (match) {
+      deepLinkFired.current = true;
+      setSelectedTool(match);
+    }
+  }, [tools, deepLinkTool]);
 
   return html`
     <div className="tool-status-bar">
