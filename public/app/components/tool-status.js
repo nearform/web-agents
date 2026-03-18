@@ -4,10 +4,14 @@ import { html } from "../util/html.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 
-const firstSentence = (text) => {
+const summarizeDescription = (text) => {
   if (!text) return "";
-  const match = text.match(/^[^.!?]+[.!?]?/);
-  return match ? match[0].trim() : text;
+  let tail = "";
+  const parenMatch = text.match(/\s+(\([^)]+\))\s*$/);
+  const body = parenMatch ? text.slice(0, parenMatch.index) : text;
+  if (parenMatch) tail = " " + parenMatch[1];
+  const match = body.match(/^[^.!?]+[.!?]?/);
+  return (match ? match[0].trim() : body.trim()) + tail;
 };
 
 const buildInitialArgs = (schema) => {
@@ -150,7 +154,7 @@ const ToolDetailModal = ({ tool, onClose }) => {
                             >`}
                           </td>
                           <td>${prop.type || "any"}</td>
-                          <td>${firstSentence(prop.description)}</td>
+                          <td>${summarizeDescription(prop.description)}</td>
                         </tr>
                       `,
                     )}
@@ -188,7 +192,9 @@ const ToolDetailModal = ({ tool, onClose }) => {
                           type="number"
                           className="tool-modal-input"
                           value=${args[name] || ""}
-                          placeholder=${firstSentence(prop.description) || name}
+                          placeholder=${summarizeDescription(
+                            prop.description,
+                          ) || name}
                           onChange=${(e) => handleChange(name, e.target.value)}
                         />
                       </label>
@@ -203,7 +209,8 @@ const ToolDetailModal = ({ tool, onClose }) => {
                         className="tool-modal-input"
                         rows=${2}
                         value=${args[name] || ""}
-                        placeholder=${firstSentence(prop.description) || name}
+                        placeholder=${summarizeDescription(prop.description) ||
+                        name}
                         onChange=${(e) => handleChange(name, e.target.value)}
                       />
                     </label>
