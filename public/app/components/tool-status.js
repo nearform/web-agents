@@ -4,6 +4,12 @@ import { html } from "../util/html.js";
 import { callTool } from "../bridge/tool-registry.js";
 import { debug } from "../util/debug.js";
 
+const firstSentence = (text) => {
+  if (!text) return "";
+  const match = text.match(/^[^.!?]+[.!?]?/);
+  return match ? match[0].trim() : text;
+};
+
 const buildInitialArgs = (schema) => {
   const args = {};
   if (!schema?.properties) return args;
@@ -144,7 +150,7 @@ const ToolDetailModal = ({ tool, onClose }) => {
                             >`}
                           </td>
                           <td>${prop.type || "any"}</td>
-                          <td>${prop.description || ""}</td>
+                          <td>${firstSentence(prop.description)}</td>
                         </tr>
                       `,
                     )}
@@ -182,7 +188,7 @@ const ToolDetailModal = ({ tool, onClose }) => {
                           type="number"
                           className="tool-modal-input"
                           value=${args[name] || ""}
-                          placeholder=${prop.description || name}
+                          placeholder=${firstSentence(prop.description) || name}
                           onChange=${(e) => handleChange(name, e.target.value)}
                         />
                       </label>
@@ -197,7 +203,7 @@ const ToolDetailModal = ({ tool, onClose }) => {
                         className="tool-modal-input"
                         rows=${2}
                         value=${args[name] || ""}
-                        placeholder=${prop.description || name}
+                        placeholder=${firstSentence(prop.description) || name}
                         onChange=${(e) => handleChange(name, e.target.value)}
                       />
                     </label>
