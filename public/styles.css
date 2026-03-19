@@ -1584,7 +1584,7 @@ body {
   font-weight: 500;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 500px) {
   .tool-modal-body {
     flex-direction: column;
   }
@@ -1720,7 +1720,12 @@ body {
   border-radius: 3px;
 }
 
-/* Responsive */
+/* Mobile Panel Tabs – hidden on desktop */
+.mobile-panel-tabs {
+  display: none;
+}
+
+/* Responsive – Tablet */
 @media (max-width: 1024px) {
   .workspace {
     grid-template-columns: 1fr 1fr;
@@ -1732,26 +1737,199 @@ body {
   }
 }
 
-@media (max-width: 640px) {
+/* Responsive – Phone (portrait narrow OR landscape short) */
+@media (max-width: 640px), (max-height: 500px) {
+  /* Viewport & container */
   .app-container {
     padding: 8px;
-    height: auto;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
+  /* Header condensed */
+  .app-header {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+
+  .app-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .intro {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  /* Mobile tab bar */
+  .mobile-panel-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .mobile-panel-tab {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 44px;
+    transition:
+      border-color 0.15s,
+      color 0.15s,
+      background 0.15s;
+  }
+
+  .mobile-panel-tab.active {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+    background: rgba(0, 229, 164, 0.06);
+  }
+
+  .mobile-panel-tab i {
+    font-size: 1rem;
+  }
+
+  /* Workspace: flex column, one panel at a time */
   .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    height: auto;
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Show only the active panel */
+  .workspace.mobile-active-chat .activity-panel,
+  .workspace.mobile-active-chat .notepad-panel,
+  .workspace.mobile-active-activity .chat-panel,
+  .workspace.mobile-active-activity .notepad-panel,
+  .workspace.mobile-active-notepad .chat-panel,
+  .workspace.mobile-active-notepad .activity-panel {
+    display: none;
   }
 
   .chat-panel,
   .activity-panel,
   .notepad-panel {
-    min-height: 300px;
-    max-height: 500px;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* Hide desktop collapse controls */
+  .panel-collapsed,
+  .panel-toggle-btn {
+    display: none;
+  }
+
+  /* Status bars stack */
+  .status-bars {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .agent-status-bar,
+  .tool-status-bar {
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .tool-status-name {
+    font-size: 0.7rem;
+  }
+
+  /* Touch targets */
+  .intro a.intro-github-link,
+  .platform-status-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .chat-send-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tool-status-item {
+    padding: 4px 8px;
+    min-height: 32px;
+  }
+
+  /* Modals: near full-screen */
+  .activity-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .tool-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  /* Footer compact */
+  .footer {
+    padding: 8px;
+    margin-top: 8px;
+  }
+}
+
+/* Landscape phone: extra-compact header to maximize panel space */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header {
+    padding: 8px 16px;
+    margin-bottom: 4px;
   }
 
   .app-header h1 {
-    font-size: 1.25rem;
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+
+  .intro {
+    display: none;
+  }
+
+  .mobile-panel-tabs {
+    margin-bottom: 4px;
+  }
+
+  .mobile-panel-tab {
+    min-height: 36px;
+    padding: 4px;
+    font-size: 0.75rem;
+  }
+
+  .status-bars {
+    margin-top: 4px;
+  }
+
+  .footer {
+    padding: 4px 8px;
+    margin-top: 4px;
+  }
+
+  .footer:not(.footer--minimized) .banner-wrapper {
+    display: none;
   }
 }

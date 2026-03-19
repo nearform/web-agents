@@ -71,6 +71,7 @@ export const App = () => {
     notepad: false,
   });
   const [bannerMinimized, setBannerMinimized] = React.useState(false);
+  const [activePanel, setActivePanel] = React.useState("chat");
   const abortControllerRef = React.useRef(null);
   const runCounterRef = React.useRef(0);
   const [stoppedState, setStoppedState] = React.useState(null);
@@ -334,8 +335,33 @@ export const App = () => {
         </p>
       </header>
 
+      <div className="mobile-panel-tabs">
+        <button
+          className="mobile-panel-tab ${activePanel === "chat" ? "active" : ""}"
+          onClick=${() => setActivePanel("chat")}
+        >
+          <i className="ph ph-chat-circle-text"></i> Chat
+        </button>
+        <button
+          className="mobile-panel-tab ${activePanel === "activity"
+            ? "active"
+            : ""}"
+          onClick=${() => setActivePanel("activity")}
+        >
+          <i className="ph ph-activity"></i> Activity
+        </button>
+        <button
+          className="mobile-panel-tab ${activePanel === "notepad"
+            ? "active"
+            : ""}"
+          onClick=${() => setActivePanel("notepad")}
+        >
+          <i className="ph ph-notepad"></i> Notepad
+        </button>
+      </div>
+
       <div
-        className="workspace"
+        className="workspace mobile-active-${activePanel}"
         style=${{ gridTemplateColumns: workspaceCols }}
       >
         <${ChatPanel}
