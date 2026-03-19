@@ -1834,22 +1834,46 @@ body {
     display: none;
   }
 
-  /* Status bars stack */
+  /* Status bars: single row each, truncated names */
   .status-bars {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     margin-top: 8px;
   }
 
   .agent-status-bar,
   .tool-status-bar {
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     font-size: 0.75rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .tool-status-name {
     font-size: 0.7rem;
+    max-width: 10ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tool-status-item {
+    padding: 2px 4px;
+    min-height: 28px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .tool-status-label {
+    flex-shrink: 0;
+  }
+
+  /* Hide panel headers – tabs serve as labels */
+  .chat-header,
+  .activity-header,
+  .notepad-header {
+    display: none;
   }
 
   /* Touch targets */
@@ -1863,11 +1887,6 @@ body {
   .chat-send-btn {
     width: 36px;
     height: 36px;
-  }
-
-  .tool-status-item {
-    padding: 4px 8px;
-    min-height: 32px;
   }
 
   /* Modals: near full-screen */
@@ -1887,17 +1906,16 @@ body {
     border-radius: 0;
   }
 
-  /* Footer compact */
+  /* Hide footer banner */
   .footer {
-    padding: 8px;
-    margin-top: 8px;
+    display: none;
   }
 }
 
-/* Landscape phone: extra-compact header to maximize panel space */
+/* Landscape phone: extra-compact to maximize panel space */
 @media (max-height: 500px) and (orientation: landscape) {
   .app-header {
-    padding: 8px 16px;
+    padding: 6px 16px;
     margin-bottom: 4px;
   }
 
@@ -1915,21 +1933,19 @@ body {
   }
 
   .mobile-panel-tab {
-    min-height: 36px;
+    min-height: 32px;
     padding: 4px;
     font-size: 0.75rem;
   }
 
+  /* Side-by-side status bars in landscape (more horizontal room) */
   .status-bars {
+    flex-direction: row;
+    gap: 4px;
     margin-top: 4px;
   }
 
-  .footer {
-    padding: 4px 8px;
-    margin-top: 4px;
-  }
-
-  .footer:not(.footer--minimized) .banner-wrapper {
-    display: none;
+  .tool-status-name {
+    max-width: 8ch;
   }
 }
