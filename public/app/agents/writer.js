@@ -93,7 +93,8 @@ ${earlier ? `\nEarlier conversation:\n${earlier}\n` : ""}${lastResponse ? `\nYou
 User's latest request: ${originalQuery}
 
 Do NOT summarize the entire notepad — extract only what's relevant to the request.
-${hasConversation ? "If the user asks you to modify, shorten, or refine your previous response, do exactly that — edit the previous response as instructed rather than generating a new answer from scratch.\n" : ""}If the notepad doesn't contain enough information to answer, say so rather than guessing.
+${hasConversation ? "If the user asks you to modify, shorten, or refine your previous response, do exactly that — edit the previous response as instructed rather than generating a new answer from scratch.\n" : ""}If the research doesn't contain enough information to answer, say so rather than guessing.
+Do NOT reference or mention "the notepad" or "the full notepad" in your reply — the user doesn't know about it.
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
 Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.`;
 
@@ -215,7 +216,7 @@ User request: ${originalQuery}`;
   emit("tool-result", { name: "take_notes", result: "written" });
 
   // Generate chat reply
-  const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat the full notepad — just highlight the key takeaway and mention the notepad has full details. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Each URL must appear only once — never repeat the same link. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
+  const chatReplyPrompt = `Now write a short 2-3 sentence conversational reply for the chat that answers the user's question. Don't repeat all the research — just highlight the key takeaway. Do NOT reference or mention "the notepad" or "the full notepad" in your reply. End with 1-3 source citations using EXACTLY this format: \`[Title](URL)\`. ONLY use URLs from the research above. Each URL must appear only once — never repeat the same link. Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.`;
   if (onAgentPrompt) onAgentPrompt("Writer", "user", chatReplyPrompt);
   emit("prompt", { summary: "Composing chat reply", prompt: chatReplyPrompt });
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
