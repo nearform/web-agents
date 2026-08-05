@@ -12,7 +12,7 @@ import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
-import { detectPlatformStatus } from "./util/platform-status.js";
+import { detectPlatformStatus } from "./util/platform.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
 
 const ExtLink = ({ href, children }) =>
@@ -304,9 +304,9 @@ export const App = () => {
             >AI models<//
           >. ${" "}
           <span
-            className="status-badge status-badge--${status === "Ready"
-              ? "ready"
-              : "warn"}"
+            className="status-badge status-badge--${
+              status === "Ready" ? "ready" : "warn"
+            }"
           >
             ${status}
           </span>
@@ -322,11 +322,13 @@ export const App = () => {
           </a>
           ${" "}
           <button
-            className="platform-status-btn ${platformStatus &&
-            (!platformStatus.languageModel.available ||
-              !platformStatus.webMcp.native)
-              ? "has-issues"
-              : ""}"
+            className="platform-status-btn ${
+              platformStatus &&
+              (!platformStatus.languageModel.available ||
+                !platformStatus.webMcp.native)
+                ? "has-issues"
+                : ""
+            }"
             onClick=${() => setShowPlatformModal(true)}
             aria-label="Platform status"
           >
@@ -343,17 +345,17 @@ export const App = () => {
           <i className="ph ph-chat-circle-text"></i> Chat
         </button>
         <button
-          className="mobile-panel-tab ${activePanel === "activity"
-            ? "active"
-            : ""}"
+          className="mobile-panel-tab ${
+            activePanel === "activity" ? "active" : ""
+          }"
           onClick=${() => setActivePanel("activity")}
         >
           <i className="ph ph-activity"></i> Activity
         </button>
         <button
-          className="mobile-panel-tab ${activePanel === "notepad"
-            ? "active"
-            : ""}"
+          className="mobile-panel-tab ${
+            activePanel === "notepad" ? "active" : ""
+          }"
           onClick=${() => setActivePanel("notepad")}
         >
           <i className="ph ph-notepad"></i> Notepad
@@ -401,62 +403,66 @@ export const App = () => {
         <${ToolStatus} tools=${tools} deepLinkTool=${config.deepLinkTool} />
       </div>
 
-      ${showPlatformModal &&
-      html`
-        <${PlatformStatusModal}
-          platformStatus=${platformStatus}
-          onClose=${() => setShowPlatformModal(false)}
-        />
-      `}
+      ${
+        showPlatformModal &&
+        html`
+          <${PlatformStatusModal}
+            platformStatus=${platformStatus}
+            onClose=${() => setShowPlatformModal(false)}
+          />
+        `
+      }
 
       <footer className="footer ${bannerMinimized ? "footer--minimized" : ""}">
-        ${bannerMinimized
-          ? html`
-              <div className="banner-mini">
-                <a
-                  href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="banner-mini-pill"
-                  aria-label="Nearform Open Source"
-                >
-                  NF
-                </a>
-                <button
-                  type="button"
-                  className="banner-restore-btn"
-                  onClick=${() => setBannerMinimized(false)}
-                  aria-label="Restore banner"
-                  title="Restore banner"
-                >
-                  <i className="ph ph-arrow-square-out"></i>
-                </button>
-              </div>
-            `
-          : html`
-              <div className="banner-wrapper">
-                <a
-                  href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img
-                    src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
-                    alt="Nearform Open Source"
-                    className="nearform-banner"
-                  />
-                </a>
-                <button
-                  type="button"
-                  className="banner-minimize-btn"
-                  onClick=${() => setBannerMinimized(true)}
-                  title="Minimize banner"
-                  aria-label="Minimize banner"
-                >
-                  <i className="ph ph-minus"></i>
-                </button>
-              </div>
-            `}
+        ${
+          bannerMinimized
+            ? html`
+                <div className="banner-mini">
+                  <a
+                    href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="banner-mini-pill"
+                    aria-label="Nearform Open Source"
+                  >
+                    NF
+                  </a>
+                  <button
+                    type="button"
+                    className="banner-restore-btn"
+                    onClick=${() => setBannerMinimized(false)}
+                    aria-label="Restore banner"
+                    title="Restore banner"
+                  >
+                    <i className="ph ph-arrow-square-out"></i>
+                  </button>
+                </div>
+              `
+            : html`
+                <div className="banner-wrapper">
+                  <a
+                    href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
+                      alt="Nearform Open Source"
+                      className="nearform-banner"
+                    />
+                  </a>
+                  <button
+                    type="button"
+                    className="banner-minimize-btn"
+                    onClick=${() => setBannerMinimized(true)}
+                    title="Minimize banner"
+                    aria-label="Minimize banner"
+                  >
+                    <i className="ph ph-minus"></i>
+                  </button>
+                </div>
+              `
+        }
       </footer>
     </div>
   `;

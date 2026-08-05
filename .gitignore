@@ -36,3 +36,4 @@ tmp-*
 
 # AI stuff
 .playwright-mcp/
+.claude/settings*.json

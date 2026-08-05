@@ -45,93 +45,108 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
             <span className="platform-status-label">
               ${lmOk ? "Available" : "Not Available"}
             </span>
-            ${webMcp.chromeVersion != null &&
-            html`
-              <span className="platform-status-chrome-ver"
-                >Chrome ${webMcp.chromeVersion}</span
-              >
-            `}
+            ${
+              webMcp.chromeVersion != null &&
+              html`
+                <span className="platform-status-chrome-ver"
+                  >Chrome ${webMcp.chromeVersion}</span
+                >
+              `
+            }
           </div>
-          ${!lmOk &&
-          html`
-            <div className="platform-status-instructions">
-              ${!isChrome
-                ? html`<p>
-                    This feature requires <strong>Chrome 138+</strong>. Your
-                    current browser is not supported.
-                  </p>`
-                : html`
-                    <p>To enable the LanguageModel (Prompt) API:</p>
-                    <ol>
-                      <li>Use <strong>Chrome 138+</strong></li>
-                      <li>
-                        Open
-                        <code
-                          >chrome://flags/#optimization-guide-on-device-model</code
-                        >
-                        and set to <strong>Enabled</strong>
-                      </li>
-                      <li>
-                        Open
-                        <code
-                          >chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code
-                        >
-                        and set to <strong>Enabled</strong>
-                      </li>
-                      <li>Relaunch Chrome</li>
-                    </ol>
-                  `}
-            </div>
-          `}
+          ${
+            !lmOk &&
+            html`
+              <div className="platform-status-instructions">
+                ${
+                  !isChrome
+                    ? html`<p>
+                        This feature requires <strong>Chrome 138+</strong>. Your
+                        current browser is not supported.
+                      </p>`
+                    : html`
+                        <p>To enable the LanguageModel (Prompt) API:</p>
+                        <ol>
+                          <li>Use <strong>Chrome 138+</strong></li>
+                          <li>
+                            Open
+                            <code
+                              >chrome://flags/#optimization-guide-on-device-model</code
+                            >
+                            and set to <strong>Enabled</strong>
+                          </li>
+                          <li>
+                            Open
+                            <code
+                              >chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code
+                            >
+                            and set to <strong>Enabled</strong>
+                          </li>
+                          <li>Relaunch Chrome</li>
+                        </ol>
+                      `
+                }
+              </div>
+            `
+          }
 
           <div className="platform-status-row">
             <span
-              className="platform-status-dot ${webMcpOk
-                ? "ok"
-                : webMcpPolyfilled
-                  ? "warn"
-                  : "error"}"
+              className="platform-status-dot ${
+                webMcpOk ? "ok" : webMcpPolyfilled ? "warn" : "error"
+              }"
             ></span>
             <strong>WebMCP</strong>
             <span className="platform-status-label">
-              ${webMcpOk
-                ? "Native"
-                : webMcpPolyfilled
-                  ? "Polyfilled"
-                  : "Not Available"}
+              ${
+                webMcpOk
+                  ? "Native"
+                  : webMcpPolyfilled
+                    ? "Polyfilled"
+                    : "Not Available"
+              }
             </span>
-            ${webMcp.chromeVersion != null &&
-            html`
-              <span className="platform-status-chrome-ver"
-                >Chrome ${webMcp.chromeVersion}</span
-              >
-            `}
+            ${
+              webMcp.chromeVersion != null &&
+              html`
+                <span className="platform-status-chrome-ver"
+                  >Chrome ${webMcp.chromeVersion}</span
+                >
+              `
+            }
           </div>
-          ${!webMcpOk &&
-          html`
-            <div className="platform-status-instructions">
-              ${!isChrome
-                ? html`<p>
-                    Native WebMCP requires <strong>Chrome 146+</strong>. Your
-                    current browser is not
-                    supported${webMcpPolyfilled
-                      ? ", but a polyfill is active to provide functionality"
-                      : ""}.
-                  </p>`
-                : html`
-                    <p>To enable native WebMCP:</p>
-                    <ol>
-                      <li>Use <strong>Chrome 146+</strong></li>
-                      <li>
-                        Open <code>chrome://flags</code> and search for${" "}
-                        <strong>WebMCP</strong>
-                      </li>
-                      <li>Enable <strong>"WebMCP for testing"</strong></li>
-                      <li>Relaunch Chrome</li>
-                    </ol>
-                  `}
-            </div>
-          `}
+          ${
+            !webMcpOk &&
+            html`
+              <div className="platform-status-instructions">
+                ${
+                  !isChrome
+                    ? html`<p>
+                        Native WebMCP requires <strong>Chrome 146+</strong>.
+                        Your current browser is not
+                        supported${
+                          webMcpPolyfilled
+                            ? ", but a polyfill is active to provide functionality"
+                            : ""
+                        }.
+                      </p>`
+                    : html`
+                        <p>To enable native WebMCP:</p>
+                        <ol>
+                          <li>Use <strong>Chrome 146+</strong></li>
+                          <li>
+                            Open <code>chrome://flags</code> and search
+                            for${" "}
+                            <strong>WebMCP</strong>
+                          </li>
+                          <li>Enable <strong>"WebMCP for testing"</strong></li>
+                          <li>Relaunch Chrome</li>
+                        </ol>
+                      `
+                }
+              </div>
+            `
+          }
         </div>
       </div>
     </div>

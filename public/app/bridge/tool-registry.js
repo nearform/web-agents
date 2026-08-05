@@ -6,6 +6,7 @@ import {
 } from "./iframe-bridge.js";
 import { TOOLS } from "../tools/index.js";
 import { debug } from "../util/debug.js";
+import { getModelContext } from "../util/platform.js";
 
 let remoteTools = [];
 let connected = false;
@@ -24,7 +25,7 @@ export const initRegistry = async () => {
     debug.warn("tool-registry", "Remote tool discovery failed");
   }
 
-  registerLocalToolsWithWebMcp();
+  await registerLocalToolsWithWebMcp();
 
   return listTools();
 };
@@ -76,11 +77,12 @@ export const callTool = async (name, args) => {
   throw new Error(`Unknown tool: ${name}`);
 };
 
-const registerLocalToolsWithWebMcp = () => {
-  if (!("modelContext" in navigator)) return;
+const registerLocalToolsWithWebMcp = async () => {
+  const modelContext = getModelContext();
+  if (!modelContext) return;
 
   for (const tool of TOOLS) {
-    navigator.modelContext.registerTool(tool);
+    await modelContext.registerTool(tool);
   }
   debug.info("tool-registry", "Registered local tools with WebMCP");
 };

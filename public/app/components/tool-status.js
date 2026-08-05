@@ -109,16 +109,20 @@ const ToolDetailModal = ({ tool, onClose }) => {
           <div>
             <strong>${tool.name}</strong>
             <span className="tool-modal-source">${tool.source}</span>
-            ${tool.connected !== false &&
-            html`<span
-              className="tool-status-dot connected"
-              style=${{ display: "inline-block", marginLeft: 8 }}
-            ></span>`}
-            ${tool.connected === false &&
-            html`<span
-              className="tool-status-dot disconnected"
-              style=${{ display: "inline-block", marginLeft: 8 }}
-            ></span>`}
+            ${
+              tool.connected !== false &&
+              html`<span
+                className="tool-status-dot connected"
+                style=${{ display: "inline-block", marginLeft: 8 }}
+              ></span>`
+            }
+            ${
+              tool.connected === false &&
+              html`<span
+                className="tool-status-dot disconnected"
+                style=${{ display: "inline-block", marginLeft: 8 }}
+              ></span>`
+            }
           </div>
           <button className="activity-modal-close" onClick=${onClose}>
             <i className="ph ph-x"></i>
@@ -128,96 +132,105 @@ const ToolDetailModal = ({ tool, onClose }) => {
         <div className="tool-modal-body">
           <div className="tool-modal-left">
             <div className="tool-modal-schema">
-              ${tool.description &&
-              html`<div className="tool-modal-description">
-                ${tool.description}
-              </div>`}
-              ${propEntries.length > 0 &&
-              html`
-                <table className="tool-modal-properties">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${propEntries.map(
-                      ([name, prop]) => html`
-                        <tr key=${name}>
-                          <td>
-                            <code>${name}</code>
-                            ${required.includes(name) &&
-                            html`<span className="tool-modal-required">
-                              ${" "}*</span
-                            >`}
-                          </td>
-                          <td>${prop.type || "any"}</td>
-                          <td>${summarizeDescription(prop.description)}</td>
-                        </tr>
-                      `,
-                    )}
-                  </tbody>
-                </table>
-              `}
+              ${
+                tool.description &&
+                html`<div className="tool-modal-description">
+                  ${tool.description}
+                </div>`
+              }
+              ${
+                propEntries.length > 0 &&
+                html`
+                  <table className="tool-modal-properties">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${propEntries.map(
+                        ([name, prop]) => html`
+                          <tr key=${name}>
+                            <td>
+                              <code>${name}</code>
+                              ${
+                                required.includes(name) &&
+                                html`<span className="tool-modal-required">
+                                  ${" "}*</span
+                                >`
+                              }
+                            </td>
+                            <td>${prop.type || "any"}</td>
+                            <td>${summarizeDescription(prop.description)}</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `
+              }
             </div>
 
-            ${propEntries.length > 0 &&
-            html`
-              <div className="tool-modal-form">
-                ${propEntries.map(([name, prop]) => {
-                  if (prop.type === "boolean") {
+            ${
+              propEntries.length > 0 &&
+              html`
+                <div className="tool-modal-form">
+                  ${propEntries.map(([name, prop]) => {
+                    if (prop.type === "boolean") {
+                      return html`
+                        <label key=${name} className="tool-modal-field">
+                          <span className="tool-modal-label"
+                            >${name}${required.includes(name) ? " *" : ""}</span
+                          >
+                          <input
+                            type="checkbox"
+                            checked=${args[name] || false}
+                            onChange=${(e) =>
+                              handleChange(name, e.target.checked, "boolean")}
+                          />
+                        </label>
+                      `;
+                    }
+                    if (prop.type === "number" || prop.type === "integer") {
+                      return html`
+                        <label key=${name} className="tool-modal-field">
+                          <span className="tool-modal-label"
+                            >${name}${required.includes(name) ? " *" : ""}</span
+                          >
+                          <input
+                            type="number"
+                            className="tool-modal-input"
+                            value=${args[name] || ""}
+                            placeholder=${
+                              summarizeDescription(prop.description) || name
+                            }
+                            onChange=${(e) => handleChange(name, e.target.value)}
+                          />
+                        </label>
+                      `;
+                    }
                     return html`
                       <label key=${name} className="tool-modal-field">
                         <span className="tool-modal-label"
                           >${name}${required.includes(name) ? " *" : ""}</span
                         >
-                        <input
-                          type="checkbox"
-                          checked=${args[name] || false}
-                          onChange=${(e) =>
-                            handleChange(name, e.target.checked, "boolean")}
-                        />
-                      </label>
-                    `;
-                  }
-                  if (prop.type === "number" || prop.type === "integer") {
-                    return html`
-                      <label key=${name} className="tool-modal-field">
-                        <span className="tool-modal-label"
-                          >${name}${required.includes(name) ? " *" : ""}</span
-                        >
-                        <input
-                          type="number"
+                        <textarea
                           className="tool-modal-input"
+                          rows=${2}
                           value=${args[name] || ""}
-                          placeholder=${summarizeDescription(
-                            prop.description,
-                          ) || name}
+                          placeholder=${
+                            summarizeDescription(prop.description) || name
+                          }
                           onChange=${(e) => handleChange(name, e.target.value)}
                         />
                       </label>
                     `;
-                  }
-                  return html`
-                    <label key=${name} className="tool-modal-field">
-                      <span className="tool-modal-label"
-                        >${name}${required.includes(name) ? " *" : ""}</span
-                      >
-                      <textarea
-                        className="tool-modal-input"
-                        rows=${2}
-                        value=${args[name] || ""}
-                        placeholder=${summarizeDescription(prop.description) ||
-                        name}
-                        onChange=${(e) => handleChange(name, e.target.value)}
-                      />
-                    </label>
-                  `;
-                })}
-              </div>
-            `}
+                  })}
+                </div>
+              `
+            }
 
             <div className="tool-modal-actions">
               <button
@@ -227,38 +240,45 @@ const ToolDetailModal = ({ tool, onClose }) => {
               >
                 ${loading ? "Executing..." : "Execute"}
               </button>
-              ${tool.connected === false &&
-              html`<span style=${{ fontSize: "0.75rem", color: "#ef4444" }}
-                >Tool disconnected</span
-              >`}
+              ${
+                tool.connected === false &&
+                html`<span style=${{ fontSize: "0.75rem", color: "#ef4444" }}
+                  >Tool disconnected</span
+                >`
+              }
             </div>
           </div>
 
           <div className="tool-modal-right">
             <div className="tool-modal-right-header">
               <span>Output</span>
-              ${result != null &&
-              html`
-                <button
-                  className="tool-modal-copy-btn"
-                  onClick=${handleCopy}
-                  title=${copied ? "Copied!" : "Copy raw result"}
-                >
-                  <i className="ph ph-${copied ? "check" : "copy"}"></i>
-                  ${copied &&
-                  html`<span className="tool-modal-copy-tooltip"
-                    >Copied!</span
-                  >`}
-                </button>
-              `}
+              ${
+                result != null &&
+                html`
+                  <button
+                    className="tool-modal-copy-btn"
+                    onClick=${handleCopy}
+                    title=${copied ? "Copied!" : "Copy raw result"}
+                  >
+                    <i className="ph ph-${copied ? "check" : "copy"}"></i>
+                    ${
+                      copied &&
+                      html`<span className="tool-modal-copy-tooltip"
+                        >Copied!</span
+                      >`
+                    }
+                  </button>
+                `
+              }
             </div>
             <pre className="tool-modal-result">
-${result == null
-                ? "No output yet. Execute the tool to see results."
-                : result.ok
-                  ? JSON.stringify(result.data, null, 2)
-                  : `Error: ${result.data}`}</pre
-            >
+${
+  result == null
+    ? "No output yet. Execute the tool to see results."
+    : result.ok
+      ? JSON.stringify(result.data, null, 2)
+      : `Error: ${result.data}`
+}</pre>
           </div>
         </div>
       </div>
@@ -292,16 +312,18 @@ export const ToolStatus = ({ tools, deepLinkTool }) => {
             onClick=${() => setSelectedTool(tool)}
           >
             <span
-              className="tool-status-dot ${tool.connected
-                ? "connected"
-                : "disconnected"}"
+              className="tool-status-dot ${
+                tool.connected ? "connected" : "disconnected"
+              }"
             ></span>
             <span className="tool-status-name">${tool.name}</span>
           </span>
         `,
       )}
-      ${tools.length === 0 &&
-      html`<span className="tool-status-none">Discovering tools...</span>`}
+      ${
+        tools.length === 0 &&
+        html`<span className="tool-status-none">Discovering tools...</span>`
+      }
     </div>
     <${ToolDetailModal}
       tool=${selectedTool}
