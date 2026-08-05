@@ -25,7 +25,7 @@ export const initRegistry = async () => {
     debug.warn("tool-registry", "Remote tool discovery failed");
   }
 
-  registerLocalToolsWithWebMcp();
+  await registerLocalToolsWithWebMcp();
 
   return listTools();
 };
@@ -77,11 +77,11 @@ export const callTool = async (name, args) => {
   throw new Error(`Unknown tool: ${name}`);
 };
 
-const registerLocalToolsWithWebMcp = () => {
+const registerLocalToolsWithWebMcp = async () => {
   if (!("modelContext" in navigator)) return;
 
   for (const tool of TOOLS) {
-    getModelContext().registerTool(tool);
+    await getModelContext().registerTool(tool);
   }
   debug.info("tool-registry", "Registered local tools with WebMCP");
 };

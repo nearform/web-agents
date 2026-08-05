@@ -32,6 +32,10 @@ export const initBridge = async () => {
   iframe.src = IFRAME_SRC;
   iframe.style.display = "none";
   iframe.setAttribute("aria-hidden", "true");
+  // The WebMCP API is gated by the "tools" permissions policy, which defaults to
+  // `self`. In local dev the iframe is a different origin (:4600 vs :4610), so
+  // delegate the feature to it or its `registerTool` calls throw NotAllowedError.
+  iframe.setAttribute("allow", "tools");
   document.body.appendChild(iframe);
 
   await new Promise((resolve, reject) => {
