@@ -11,12 +11,13 @@
     "pretty:fix": "prettier . --write",
     "pretty:check": "prettier . --check",
     "check": "npm run lint:check && npm run pretty:check",
-    "format": "npm run lint:fix && npm run pretty:fix"
+    "format": "npm run lint:fix && npm run pretty:fix",
+    "dep:check": "npx npm-check-updates"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.0.3",
+    "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.8.1"
+    "prettier": "^3.9.6"
   }
 }
