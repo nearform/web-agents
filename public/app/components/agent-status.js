@@ -41,13 +41,17 @@ const HistoryEntries = ({ entries, expanded, toggle, idPrefix }) => {
           >
           <span className="agent-history-label">${entry.label}</span>
           <span className="agent-history-time">${entry.timestamp}</span>
-          ${!isOpen &&
-          html`<span className="agent-history-preview">${preview}</span>`}
+          ${
+            !isOpen &&
+            html`<span className="agent-history-preview">${preview}</span>`
+          }
         </button>
-        ${isOpen &&
-        html`<div className="agent-history-body">
-          <pre>${entry.text || "(empty)"}</pre>
-        </div>`}
+        ${
+          isOpen &&
+          html`<div className="agent-history-body">
+            <pre>${entry.text || "(empty)"}</pre>
+          </div>`
+        }
       </div>
     `;
   });
@@ -137,21 +141,25 @@ const HistoryAccordion = ({ history }) => {
               </span>
               <span className="agent-history-run-label">Run #${group.run}</span>
               <span className="agent-history-time">${time}</span>
-              ${!open &&
-              html`<span className="agent-history-run-summary"
-                >${prompts} prompt${prompts !== 1 ? "s" : ""}, ${answers}
-                ${" "}answer${answers !== 1 ? "s" : ""}</span
-              >`}
+              ${
+                !open &&
+                html`<span className="agent-history-run-summary"
+                  >${prompts} prompt${prompts !== 1 ? "s" : ""}, ${answers}
+                  ${" "}answer${answers !== 1 ? "s" : ""}</span
+                >`
+              }
             </button>
-            ${open &&
-            html`<div className="agent-history-run-entries">
-              <${HistoryEntries}
-                entries=${group.entries}
-                expanded=${expanded}
-                toggle=${toggle}
-                idPrefix=${"r" + group.run}
-              />
-            </div>`}
+            ${
+              open &&
+              html`<div className="agent-history-run-entries">
+                <${HistoryEntries}
+                  entries=${group.entries}
+                  expanded=${expanded}
+                  toggle=${toggle}
+                  idPrefix=${"r" + group.run}
+                />
+              </div>`
+            }
           </div>
         `;
       })}
@@ -233,8 +241,10 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
               title=${copied ? "Copied!" : "Copy raw content"}
             >
               <i className="ph ph-${copied ? "check" : "copy"}"></i>
-              ${copied &&
-              html`<span className="tool-modal-copy-tooltip">Copied!</span>`}
+              ${
+                copied &&
+                html`<span className="tool-modal-copy-tooltip">Copied!</span>`
+              }
             </button>
             <button className="activity-modal-close" onClick=${onClose}>
               <i className="ph ph-x"></i>
@@ -268,18 +278,26 @@ const AgentDetailModal = ({ agent, status, prevStatus, prompts, onClose }) => {
           </button>
         </div>
         <div className="activity-modal-body" role="tabpanel">
-          ${tab === "context" &&
-          html`${contextText}
-          ${prevText &&
-          html`<div className="agent-detail-prev">${prevText.trim()}</div>`}`}
-          ${tab === "system" &&
-          (prompts?.systemPrompt
-            ? html`${prompts.systemPrompt}`
-            : html`<div className="agent-modal-empty">
-                No prompt captured yet
-              </div>`)}
-          ${tab === "history" &&
-          html`<${HistoryAccordion} history=${prompts?.history} />`}
+          ${
+            tab === "context" &&
+            html`${contextText}
+            ${
+              prevText &&
+              html`<div className="agent-detail-prev">${prevText.trim()}</div>`
+            }`
+          }
+          ${
+            tab === "system" &&
+            (prompts?.systemPrompt
+              ? html`${prompts.systemPrompt}`
+              : html`<div className="agent-modal-empty">
+                  No prompt captured yet
+                </div>`)
+          }
+          ${
+            tab === "history" &&
+            html`<${HistoryAccordion} history=${prompts?.history} />`
+          }
         </div>
       </div>
     </div>
@@ -310,14 +328,20 @@ export const AgentStatus = ({ statuses, prevStatuses, prompts }) => {
               }}
             ></span>
             <span className="tool-status-name">${name}</span>
-            ${s.contextPct != null &&
-            html`<span className="agent-context-badge">${s.contextPct}%</span>`}
-            ${prev?.contextPct != null &&
-            html`<span
-              className="agent-context-badge agent-context-badge--prev"
-              title="Previous run"
-              >${prev.contextPct}%</span
-            >`}
+            ${
+              s.contextPct != null &&
+              html`<span className="agent-context-badge"
+                >${s.contextPct}%</span
+              >`
+            }
+            ${
+              prev?.contextPct != null &&
+              html`<span
+                className="agent-context-badge agent-context-badge--prev"
+                title="Previous run"
+                >${prev.contextPct}%</span
+              >`
+            }
           </span>
         `;
       })}

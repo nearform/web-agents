@@ -63,55 +63,61 @@ export const NotepadPanel = ({
             <i className="ph ph-caret-left"></i>
           </button>
         </div>
-        ${content &&
-        !editing &&
-        html`
-          <button
-            className="notepad-edit-btn"
-            onClick=${handleStartEdit}
-            title="Edit notepad"
-          >
-            <i className="ph ph-pencil-simple"></i>
-          </button>
-        `}
-        ${editing &&
-        html`
-          <div className="notepad-edit-actions">
+        ${
+          content &&
+          !editing &&
+          html`
             <button
-              className="notepad-edit-btn notepad-save-btn"
-              onClick=${handleSave}
-              title="Save"
+              className="notepad-edit-btn"
+              onClick=${handleStartEdit}
+              title="Edit notepad"
             >
-              <i className="ph ph-check"></i>
+              <i className="ph ph-pencil-simple"></i>
             </button>
-            <button
-              className="notepad-edit-btn notepad-cancel-btn"
-              onClick=${handleCancel}
-              title="Cancel"
-            >
-              <i className="ph ph-x"></i>
-            </button>
-          </div>
-        `}
+          `
+        }
+        ${
+          editing &&
+          html`
+            <div className="notepad-edit-actions">
+              <button
+                className="notepad-edit-btn notepad-save-btn"
+                onClick=${handleSave}
+                title="Save"
+              >
+                <i className="ph ph-check"></i>
+              </button>
+              <button
+                className="notepad-edit-btn notepad-cancel-btn"
+                onClick=${handleCancel}
+                title="Cancel"
+              >
+                <i className="ph ph-x"></i>
+              </button>
+            </div>
+          `
+        }
       </div>
       <div className="notepad-content">
-        ${editing
-          ? html`<textarea
-              className="notepad-editor"
-              value=${editText}
-              onChange=${(e) => setEditText(e.target.value)}
-            />`
-          : content
-            ? html`<div
-                className="notepad-rendered"
-                dangerouslySetInnerHTML=${{ __html: renderMarkdown(content) }}
+        ${
+          editing
+            ? html`<textarea
+                className="notepad-editor"
+                value=${editText}
+                onChange=${(e) => setEditText(e.target.value)}
               />`
-            : html`
-                <div className="notepad-empty">
-                  Research findings will appear here. You can edit them to
-                  refine context for follow-up queries.
-                </div>
-              `}
+            : content
+              ? html`<div
+                  className="notepad-rendered"
+                  dangerouslySetInnerHTML=${{ __html: renderMarkdown(content) }}
+                />`
+              : html`
+                  <div className="notepad-empty">
+                    Research findings will appear here. You can edit them to
+                    refine context for follow-up queries.
+                  </div>
+                `
+        }
       </div>
     </div>
   `;

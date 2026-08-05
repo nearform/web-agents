@@ -78,9 +78,9 @@ const ActivityEntry = ({ entry, onClick }) => {
 
   return html`
     <div
-      className="activity-entry ${AGENT_COLORS[entry.agent] || ""} ${expandable
-        ? "expandable"
-        : ""}"
+      className="activity-entry ${AGENT_COLORS[entry.agent] || ""} ${
+        expandable ? "expandable" : ""
+      }"
       onClick=${() => expandable && onClick(entry)}
     >
       <span className="activity-time">${formatTime(entry.timestamp)}</span>
@@ -166,8 +166,10 @@ const DetailModal = ({ entry, onClose }) => {
               title=${copied ? "Copied!" : "Copy raw content"}
             >
               <i className="ph ph-${copied ? "check" : "copy"}"></i>
-              ${copied &&
-              html`<span className="tool-modal-copy-tooltip">Copied!</span>`}
+              ${
+                copied &&
+                html`<span className="tool-modal-copy-tooltip">Copied!</span>`
+              }
             </button>
             <button className="activity-modal-close" onClick=${onClose}>
               <i className="ph ph-x"></i>
@@ -221,12 +223,14 @@ export const ActivityLog = ({ activities, collapsed, onToggle }) => {
         </button>
       </div>
       <div className="activity-feed">
-        ${activities.length === 0 &&
-        html`
-          <div className="activity-empty">
-            Agent activity will appear here when you send a message.
-          </div>
-        `}
+        ${
+          activities.length === 0 &&
+          html`
+            <div className="activity-empty">
+              Agent activity will appear here when you send a message.
+            </div>
+          `
+        }
         ${activities.map(
           (entry, i) =>
             html`<${ActivityEntry}
