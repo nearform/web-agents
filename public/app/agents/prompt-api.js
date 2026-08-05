@@ -110,11 +110,19 @@ export const createSession = async (systemPrompt) => {
  * When Chrome ships native tool support, tools are passed to LanguageModel.create()
  * and session.prompt() handles the tool loop internally.
  * Until then, behaves identically to createSession (tools are handled manually).
+ *
+ * `history` is replayed into `initialPrompts` after the system prompt. Callers
+ * use this to rebuild a conversation on a fresh session — see the one-constraint
+ * -per-session limitation documented on promptSessionConstrained().
  */
-export const createToolSession = async (systemPrompt, tools = []) => {
+export const createToolSession = async (
+  systemPrompt,
+  tools = [],
+  history = [],
+) => {
   const opts = {
     ...PROMPT_OPTIONS,
-    initialPrompts: [{ role: "system", content: systemPrompt }],
+    initialPrompts: [{ role: "system", content: systemPrompt }, ...history],
   };
   // When Chrome ships native tool support, this branch activates
   if (hasNativeToolSupport() && tools.length > 0) {
@@ -187,6 +195,17 @@ export const promptSessionStreaming = async (
   return final;
 };
 
+/**
+ * Prompt with constrained decoding.
+ *
+ * IMPORTANT — one constrained prompt per session. As of Chrome 151, a second
+ * `responseConstraint` prompt on a session that has already served one always
+ * rejects with `UnknownError: An unknown error occurred: kErrorUnknown`, well
+ * below any context limit. `clone()` inherits the state and fails too, and
+ * `append()` does not avoid it. Unconstrained prompts on the same session are
+ * unaffected, and a fresh session replaying the conversation via
+ * `initialPrompts` works — that is how runToolLoop drives multi-turn agents.
+ */
 export const promptSessionConstrained = async (
   session,
   message,
@@ -207,13 +226,17 @@ export const promptSessionConstrained = async (
 /**
  * Constrained prompt with automatic retry on timeout.
  * On timeout, calls `shortenContext(message)` to get a shorter version and retries once.
+ *
+ * The retry runs on a session from `createRetrySession()` rather than reusing
+ * `session`: Chrome allows only one responseConstraint prompt per session (see
+ * promptSessionConstrained), so retrying in place would fail with kErrorUnknown
+ * instead of surfacing the real timeout.
  */
 export const promptSessionConstrainedWithRetry = async (
   session,
   message,
   responseConstraint,
-  shortenContext,
-  onRetry,
+  { shortenContext, onRetry, createRetrySession } = {},
 ) => {
   try {
     const t0 = Date.now();
@@ -225,17 +248,28 @@ export const promptSessionConstrainedWithRetry = async (
     debug.timing("constrainedWithRetry:ok", Date.now() - t0);
     return r;
   } catch (err) {
-    if (!err.message.includes("timed out") || !shortenContext) throw err;
+    if (
+      !err.message.includes("timed out") ||
+      !shortenContext ||
+      !createRetrySession
+    ) {
+      throw err;
+    }
     debug.warn("prompt-api", "Prompt timed out, retrying with shorter context");
     const shorter = shortenContext(message);
     if (onRetry) onRetry(shorter);
     const t0 = Date.now();
-    const r = await promptSessionConstrained(
-      session,
-      shorter,
-      responseConstraint,
-    );
-    debug.timing("constrainedWithRetry:retry", Date.now() - t0);
-    return r;
+    const retrySession = await createRetrySession();
+    try {
+      const r = await promptSessionConstrained(
+        retrySession,
+        shorter,
+        responseConstraint,
+      );
+      debug.timing("constrainedWithRetry:retry", Date.now() - t0);
+      return r;
+    } finally {
+      retrySession.destroy();
+    }
   }
 };

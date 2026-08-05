@@ -188,10 +188,20 @@ const halveToolResults = (message) => {
 /**
  * Manual tool-calling loop: constrained decoding → parse → execute → repeat.
  *
+ * `createIterationSession(history)` must return a NEW session each call. Chrome
+ * allows only one constrained prompt per session, so every iteration runs on a
+ * fresh session that replays the conversation so far through `initialPrompts`.
+ * See promptSessionConstrained() for the details.
+ *
  * Future migration: when Chrome ships native tool support, the entire body
  * becomes `return session.prompt(message)` (tools already on session).
  */
-export const runToolLoop = async (session, message, tools, options = {}) => {
+export const runToolLoop = async (
+  createIterationSession,
+  message,
+  tools,
+  options = {},
+) => {
   const {
     maxIterations = config.agents.maxIterations,
     maxResultTokens = config.agents.maxResultTokens || 1000,
@@ -213,68 +223,83 @@ export const runToolLoop = async (session, message, tools, options = {}) => {
   let currentMessage = message;
   let lastResponse = "";
   const collectedUrls = new Set();
+  // Conversation replayed into each iteration's fresh session.
+  const history = [];
 
   for (let i = 0; i < maxIterations; i++) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     const iterStart = Date.now();
-    // Check context budget before prompting
-    const budget = checkContextBudget(session, currentMessage);
 
-    // Dynamic token budget based on available context
-    const reserve = config.context.resultTokenReserve || 100;
-    if (budget.available != null) {
-      const dynamicBudget = Math.floor(budget.available * 0.5) - reserve;
-      effectiveMaxResultTokens = Math.max(
-        200,
-        Math.min(maxResultTokens, dynamicBudget),
-      );
-    }
-
-    if (budget.pct != null && budget.pct >= config.context.criticalPct) {
-      debug.warn(
-        agentName,
-        `Context critical (${budget.pct}%), halving result token budget`,
-      );
-      effectiveMaxResultTokens = Math.floor(effectiveMaxResultTokens * 0.5);
-    }
-
-    debug(
-      agentName,
-      `Result token budget: ${effectiveMaxResultTokens} (available: ${budget.available}, cap: ${maxResultTokens})`,
-    );
-
-    if (onAgentPrompt) onAgentPrompt(agentName, "user", currentMessage);
-    emit("prompt", {
-      summary: `Sending message (iteration ${i + 1})`,
-      prompt: currentMessage,
-    });
-    debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
+    const session = await createIterationSession(history);
 
     let raw;
     try {
-      raw = await promptSessionConstrainedWithRetry(
-        session,
-        currentMessage,
-        responseConstraint,
-        halveToolResults,
-        (shorter) =>
-          emit("prompt", {
-            summary: `Retry with shortened context (iteration ${i + 1})`,
-            prompt: shorter,
-          }),
+      // Check context budget before prompting
+      const budget = checkContextBudget(session, currentMessage);
+
+      // Dynamic token budget based on available context
+      const reserve = config.context.resultTokenReserve || 100;
+      if (budget.available != null) {
+        const dynamicBudget = Math.floor(budget.available * 0.5) - reserve;
+        effectiveMaxResultTokens = Math.max(
+          200,
+          Math.min(maxResultTokens, dynamicBudget),
+        );
+      }
+
+      if (budget.pct != null && budget.pct >= config.context.criticalPct) {
+        debug.warn(
+          agentName,
+          `Context critical (${budget.pct}%), halving result token budget`,
+        );
+        effectiveMaxResultTokens = Math.floor(effectiveMaxResultTokens * 0.5);
+      }
+
+      debug(
+        agentName,
+        `Result token budget: ${effectiveMaxResultTokens} (available: ${budget.available}, cap: ${maxResultTokens})`,
       );
-      // Report context after successful prompt
-      if (onContextUpdate) {
-        const info = getContextInfo(session);
-        if (info) onContextUpdate(info);
+
+      if (onAgentPrompt) onAgentPrompt(agentName, "user", currentMessage);
+      emit("prompt", {
+        summary: `Sending message (iteration ${i + 1})`,
+        prompt: currentMessage,
+      });
+      debug(agentName, `=== INPUT (iteration ${i + 1}) ===\n` + currentMessage);
+
+      try {
+        raw = await promptSessionConstrainedWithRetry(
+          session,
+          currentMessage,
+          responseConstraint,
+          {
+            shortenContext: halveToolResults,
+            onRetry: (shorter) =>
+              emit("prompt", {
+                summary: `Retry with shortened context (iteration ${i + 1})`,
+                prompt: shorter,
+              }),
+            createRetrySession: () => createIterationSession(history),
+          },
+        );
+        // Report context after successful prompt
+        if (onContextUpdate) {
+          const info = getContextInfo(session);
+          if (info) onContextUpdate(info);
+        }
+      } catch (err) {
+        if (err.message.includes("timed out")) {
+          emit("retry", `Prompt timed out, retried with shorter context`);
+        }
+        emit("error", `Prompt failed: ${err.message}`);
+        throw err;
       }
-    } catch (err) {
-      if (err.message.includes("timed out")) {
-        emit("retry", `Prompt timed out, retried with shorter context`);
-      }
-      emit("error", `Prompt failed: ${err.message}`);
-      throw err;
+    } finally {
+      session.destroy();
     }
+
+    history.push({ role: "user", content: currentMessage });
+    history.push({ role: "assistant", content: raw });
 
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 

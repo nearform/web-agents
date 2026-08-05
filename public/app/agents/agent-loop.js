@@ -24,7 +24,11 @@ const slimToolResult = (result) => {
   return {
     postCount: Math.min(result.posts.length, maxPosts),
     posts: posts.map((p) => {
-      const text = chunkMap.get(p.slug) || "";
+      // chunk.text arrives as an array of strings; slicing it directly would
+      // cap the number of chunks rather than the character count, leaving
+      // excerpts effectively untruncated.
+      const chunk = chunkMap.get(p.slug);
+      const text = Array.isArray(chunk) ? chunk.join("\n\n") : (chunk ?? "");
       return {
         title: p.title,
         href: p.href,
@@ -64,32 +68,32 @@ export const runAgentLoop = async ({
   const executableTools = makeTools(tools, {
     transformResult: slimToolResult,
   });
-  const session = await createToolSession(systemPrompt, executableTools);
 
-  try {
-    const { text, validUrls } = await runToolLoop(
-      session,
-      userMessage,
-      executableTools,
-      {
-        emit,
-        agentName,
-        onContextUpdate,
-        onAgentPrompt,
-        signal,
-      },
+  // One constrained prompt per session is all Chrome allows, so the loop owns
+  // session lifecycle: a fresh session per iteration, replaying `history`.
+  const createIterationSession = (history) =>
+    createToolSession(systemPrompt, executableTools, history);
+
+  const { text, validUrls } = await runToolLoop(
+    createIterationSession,
+    userMessage,
+    executableTools,
+    {
+      emit,
+      agentName,
+      onContextUpdate,
+      onAgentPrompt,
+      signal,
+    },
+  );
+  emit("done", `${agentName} finished`);
+
+  if (validUrls && validUrls.length > 0) {
+    return (
+      text +
+      "\n\n## Verified URLs\nOnly use URLs from this list:\n" +
+      validUrls.map((u) => `- ${u}`).join("\n")
     );
-    emit("done", `${agentName} finished`);
-
-    if (validUrls && validUrls.length > 0) {
-      return (
-        text +
-        "\n\n## Verified URLs\nOnly use URLs from this list:\n" +
-        validUrls.map((u) => `- ${u}`).join("\n")
-      );
-    }
-    return text;
-  } finally {
-    session.destroy();
   }
+  return text;
 };
