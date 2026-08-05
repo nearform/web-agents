@@ -12,7 +12,7 @@ import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
-import { detectPlatformStatus } from "./util/platform-status.js";
+import { detectPlatformStatus } from "./util/platform.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
 
 const ExtLink = ({ href, children }) =>

@@ -6,6 +6,7 @@ import {
 } from "./iframe-bridge.js";
 import { TOOLS } from "../tools/index.js";
 import { debug } from "../util/debug.js";
+import { getModelContext } from "../util/platform.js";
 
 let remoteTools = [];
 let connected = false;
@@ -80,7 +81,7 @@ const registerLocalToolsWithWebMcp = () => {
   if (!("modelContext" in navigator)) return;
 
   for (const tool of TOOLS) {
-    navigator.modelContext.registerTool(tool);
+    getModelContext().registerTool(tool);
   }
   debug.info("tool-registry", "Registered local tools with WebMCP");
 };

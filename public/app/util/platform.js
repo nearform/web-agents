@@ -1,4 +1,7 @@
-/* global navigator:false */
+/* global navigator:false,document:false */
+export const getModelContext = () =>
+  document.modelContext ?? navigator.modelContext;
+
 /**
  * Detect platform capabilities for the status modal.
  * @param {{ available: boolean, reason?: string }} apiCheck — result of checkAvailability()
@@ -17,12 +20,9 @@ export function detectPlatformStatus(apiCheck) {
   const isChrome = chromeVersion !== null;
 
   // WebMCP detection
-  const native = !!(
-    navigator.modelContext && !navigator.modelContext.__isWebMCPPolyfill
-  );
-  const polyfilled = !!(
-    navigator.modelContext && navigator.modelContext.__isWebMCPPolyfill
-  );
+  const modelContext = getModelContext();
+  const native = !!(modelContext && !modelContext.__isWebMCPPolyfill);
+  const polyfilled = !!(modelContext && modelContext.__isWebMCPPolyfill);
 
   return {
     languageModel,
