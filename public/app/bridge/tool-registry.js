@@ -78,10 +78,11 @@ export const callTool = async (name, args) => {
 };
 
 const registerLocalToolsWithWebMcp = async () => {
-  if (!("modelContext" in navigator)) return;
+  const modelContext = getModelContext();
+  if (!modelContext) return;
 
   for (const tool of TOOLS) {
-    await getModelContext().registerTool(tool);
+    await modelContext.registerTool(tool);
   }
   debug.info("tool-registry", "Registered local tools with WebMCP");
 };
