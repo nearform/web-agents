@@ -70,6 +70,7 @@
       import htm from "htm";
       import { App } from "./app/index.js";
       import { initializeWebMCPPolyfill } from "@mcp-b/webmcp-polyfill";
+      import { initLocalRelay } from "./app/util/relay.js";
 
       initializeWebMCPPolyfill({ installTestingShim: true });
 
@@ -77,12 +78,9 @@
       const root = createRoot(document.getElementById("root"));
       root.render(html`<${App} />`);
 
-      // Load the local relay embed *after* the polyfill and tools are registered.
-      // Note: jsdelivr won't serve the embedded HTML as "text/html" so use another CDN instead.
-      const script = document.createElement("script");
-      script.src =
-        "https://unpkg.com/@mcp-b/webmcp-local-relay@4.0.0/dist/browser/embed.js";
-      document.body.appendChild(script);
+      // Bridge to a local MCP client, if one is running. Optional — the demo
+      // works without it — so this no-ops quietly when no relay is listening.
+      initLocalRelay();
     </script>
   </body>
 </html>
