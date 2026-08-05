@@ -193,8 +193,10 @@ const halveToolResults = (message) => {
  * fresh session that replays the conversation so far through `initialPrompts`.
  * See promptSessionConstrained() for the details.
  *
- * Future migration: when Chrome ships native tool support, the entire body
- * becomes `return session.prompt(message)` (tools already on session).
+ * Future migration: when Chrome ships native tool support, the body collapses
+ * to a single prompt() on one session created with `tools`, because the browser
+ * runs the loop itself. The per-iteration session churn only exists to dodge the
+ * constrained-decoding limit, so it goes away at the same time.
  */
 export const runToolLoop = async (
   createIterationSession,
