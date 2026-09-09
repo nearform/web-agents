@@ -3,7 +3,11 @@ import { IframeParentTransport } from "@mcp-b/transports";
 import { config } from "../config.js";
 import { debug } from "../util/debug.js";
 
-const IFRAME_SRC = `${config.vectorSearchOrigin}${config.vectorSearchPath}`;
+// `relay=false` keeps the framed page from bridging itself to a local WebMCP
+// relay. Its tools reach us over the bespoke iframe transport below, and the
+// top-level page runs its own relay — so a relay inside the iframe would only
+// register the same tools a second time and double them up in the MCP client.
+const IFRAME_SRC = `${config.vectorSearchOrigin}${config.vectorSearchPath}?relay=false`;
 
 let transport = null;
 let messageId = 0;

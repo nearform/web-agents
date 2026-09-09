@@ -13,6 +13,12 @@ const EMBED_SPECIFIER = "@mcp-b/webmcp-local-relay/embed";
 // The relay binds the first free port in 9333-9348, so a second instance (or a
 // busy 9333) lands elsewhere. Override with ?relayHost= / ?relayPort=.
 const params = new URLSearchParams(window.location.search);
+
+// `?relay=false` opts out of the relay bridge only — WebMCP tool registration
+// and every other feature stay on. Useful when this page is framed by another
+// WebMCP app that already surfaces these tools: two relay connections register
+// the same tools twice, so the MCP client lists each one twice.
+const RELAY_DISABLED = /^(false|0|no|off)$/i.test(params.get("relay") ?? "");
 const RELAY_HOST = params.get("relayHost") || "127.0.0.1";
 const RELAY_PORT = params.get("relayPort") || "9333";
 const RELAY_URL = `ws://${RELAY_HOST}:${RELAY_PORT}`;
@@ -57,6 +63,13 @@ const relayIsUp = () =>
  * itself never talks to the relay — so a missing one is logged, not an error.
  */
 export const initLocalRelay = async () => {
+  if (RELAY_DISABLED) {
+    console.info(
+      "[webmcp-relay] Disabled with ?relay=false — skipping MCP client bridge. " +
+        "WebMCP tools are still registered on this page.",
+    );
+    return false;
+  }
   if (!(await relayIsUp())) {
     console.info(
       `[webmcp-relay] No local relay on ${RELAY_URL} — skipping MCP client bridge. ` +
