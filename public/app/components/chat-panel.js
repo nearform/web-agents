@@ -4,59 +4,91 @@ import { renderMarkdown } from "../util/markdown.js";
 
 const SUGGESTED_QUERIES = [
   {
-    icon: "ph-storefront",
-    label: "Walmart's checkout transformation",
-    query: "How did Nearform help Walmart transform their checkout experience?",
-  },
-  {
-    icon: "ph-robot",
-    label: "AI-powered executive search transformation",
+    icon: "ph-list-checks",
+    label: "Spec-driven development in practice",
     query:
-      "What AI-powered transformation did Nearform deliver for the executive search consultancy?",
+      "What are the real-world lessons and failure modes of spec-driven development?",
   },
   {
-    icon: "ph-bank",
-    label: "Nomo digital bank launch",
-    query: "How was Nomo, the digital-only bank, launched in under 9 months?",
-  },
-  {
-    icon: "ph-robot",
+    icon: "ph-compass",
     label: "AI-native engineering",
     query:
       "What is AI-native engineering and how does it change product development?",
   },
   {
-    icon: "ph-storefront",
-    label: "Puma's global e-commerce",
-    query: "How did Nearform scale Puma's e-commerce platform globally?",
+    icon: "ph-shield-check",
+    label: "Securing agentic workflows",
+    query:
+      "How should teams secure agentic workflows and sandbox AI agents in containers?",
+  },
+  {
+    icon: "ph-test-tube",
+    label: "Evals for reliable agents",
+    query:
+      "How do you build evals to take an AI agent from prototype to production?",
+  },
+  {
+    icon: "ph-plugs",
+    label: "WebMCP: pages as agent tools",
+    query: "How does WebMCP turn web pages into tools for AI agents?",
   },
   {
     icon: "ph-code",
-    label: "MCP server best practices",
-    query: "What are best practices for implementing MCP servers?",
+    label: "MCP server tips and pitfalls",
+    query:
+      "What are the tips, tricks and pitfalls of implementing an MCP server?",
   },
   {
-    icon: "ph-robot",
-    label: "On-device AI & browser vector search",
+    icon: "ph-bank",
+    label: "AML investigations cut to hours",
+    query:
+      "How did Nearform cut AML investigation time from months to hours with AI agents?",
+  },
+  {
+    icon: "ph-currency-circle-dollar",
+    label: "AI for decentralised finance",
+    query:
+      "How is Nearform making decentralised finance more accessible with AI?",
+  },
+  {
+    icon: "ph-briefcase",
+    label: "Executive search AI transformation",
+    query:
+      "What AI-powered transformation did Nearform deliver for the executive search consultancy?",
+  },
+  {
+    icon: "ph-cpu",
+    label: "On-device AI in the browser",
     query:
       "How is Nearform using on-device AI and browser-based vector search?",
   },
   {
-    icon: "ph-bank",
-    label: "Travelex sales conversion boost",
+    icon: "ph-warning-diamond",
+    label: "Vibe coding in the enterprise",
     query:
-      "How did Travelex boost sales conversion by double digits with their new app?",
+      "What belongs in the enterprise toolkit when it comes to vibe coding?",
   },
   {
-    icon: "ph-robot",
-    label: "Open vs closed LLMs for enterprise",
+    icon: "ph-stack",
+    label: "Architectural debt, the AI tax",
     query:
-      "What should enterprises consider when choosing open vs closed LLMs?",
+      "What is architectural debt and why is it the AI tax you are already paying?",
   },
   {
-    icon: "ph-storefront",
-    label: "Starbucks progressive web app",
-    query: "How did Nearform help Starbucks build their progressive web app?",
+    icon: "ph-chart-line-down",
+    label: "When AI ROI goes flat",
+    query: "Why is AI ROI flat for many companies and how do you fix it?",
+  },
+  {
+    icon: "ph-brain",
+    label: "Research agents that grasp your data",
+    query:
+      "Why don't schema mappings carry meaning when building a research agent over your data?",
+  },
+  {
+    icon: "ph-terminal-window",
+    label: "Shell tools for coding agents",
+    query: "Which shell tools make a terminal coding agent more effective?",
   },
 ];
 
