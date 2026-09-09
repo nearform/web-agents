@@ -59,12 +59,14 @@ export const callTool = async (name, args) => {
   debug("tool-registry", "callTool:", name, args);
   const localTool = TOOLS.find((t) => t.name === name);
   if (localTool) {
-    // Invoke with `modelContextTesting` to gut check tooling invocation.
-    // Could call directly if we wanted, but checks for future compliance.
-    const result = await navigator.modelContextTesting.executeTool(
-      localTool.name,
-      JSON.stringify(args),
-    );
+    // Prefer `modelContextTesting` to gut check tooling invocation, but it only
+    // exists when the WebMCP polyfill installs its shim. A native
+    // `navigator.modelContext` makes the polyfill defer and install nothing, so
+    // fall back to invoking the tool directly.
+    const testing = navigator.modelContextTesting;
+    const result = testing
+      ? await testing.executeTool(localTool.name, JSON.stringify(args))
+      : await localTool.execute(args ?? {});
     debug("tool-registry", "Local tool result:", name, result);
     return unwrapContent(result);
   }
