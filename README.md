@@ -21,6 +21,7 @@ Some other neat things:
 
 - **Chrome** with the Prompt API / Language Model API enabled (provides the on-device LLM)
 - _Optional_: the [Decisions API](https://github.com/explainers-by-googlers/decisions-api) (`DecisionModel`, `chrome://flags/#decisions-api`). When present, the Coordinator uses it to decide whether a follow-up needs new research; otherwise it asks the Prompt API. Pick a strategy with `?triage=prompt-api|decision-choice|decision-booleans`, and compare them on labelled cases at `/public/tests/triage.html`.
+- _Optional_: [Prompt API tool use](https://github.com/webmachinelearning/prompt-api#tool-use) (`chrome://flags/#prompt-api-tool-use`). When present, agents declare their tools to the model and get tool calls back natively; otherwise (or if a native run fails) they use a manual loop that reads tool calls from constrained JSON. Force the manual loop with `?toolcalls=manual`.
 - **[vector-search-web](https://github.com/nearform/vector-search-web)** provides the `search_nearform_knowledge` tool. (Runs on `http://localhost:4600` in localdev and https://nearform.github.io/vector-search-web/ in production).
 
 ## Development

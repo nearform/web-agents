@@ -77,7 +77,8 @@ export const runResearcher = async ({
   // Each runAgentLoop call creates and destroys its own session,
   // so coordinator retries automatically get fresh sessions.
   const result = await runAgentLoop({
-    systemPrompt: getResearcherSystemPrompt(searchTools, query),
+    getSystemPrompt: ({ native }) =>
+      getResearcherSystemPrompt(searchTools, query, { native }),
     userMessage: `You MUST search for content. Call search_nearform_knowledge now with a relevant query.
 ${contextSummary ? `\n${contextSummary}\n\nThe user wants to build on it. Only search for information genuinely MISSING from the above. Do not re-search topics already covered. When in doubt, omit categoryPrimary to avoid filtering out relevant results.\n` : ""}
 User question: ${query}`,

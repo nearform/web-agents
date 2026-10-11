@@ -14,7 +14,7 @@ import { config } from "../config.js";
  * If the result is JSON with a posts array, drop posts from the end instead
  * of slicing the string (which would break URLs and fields).
  */
-const trimResult = (str, maxTokens) => {
+export const trimResult = (str, maxTokens) => {
   const maxChars = tokensToChars(maxTokens);
   if (str.length <= maxChars) return str;
   try {
@@ -31,6 +31,23 @@ const trimResult = (str, maxTokens) => {
     // not JSON — fall through
   }
   return str.slice(0, maxChars) + "...[truncated]";
+};
+
+/**
+ * Add the post URLs in a raw tool result to `urls`, before trimming can cut
+ * them. Results that are not JSON with a posts array add nothing.
+ */
+export const collectPostUrls = (resultStr, urls) => {
+  try {
+    const parsed = JSON.parse(resultStr);
+    if (parsed && Array.isArray(parsed.posts)) {
+      for (const post of parsed.posts) {
+        if (post.href) urls.add(post.href);
+      }
+    }
+  } catch {
+    /* not JSON with posts */
+  }
 };
 
 /**
@@ -193,10 +210,9 @@ const halveToolResults = (message) => {
  * fresh session that replays the conversation so far through `initialPrompts`.
  * See promptSessionConstrained() for the details.
  *
- * Future migration: when Chrome ships native tool support, the body collapses
- * to a single prompt() on one session created with `tools`, because the browser
- * runs the loop itself. The per-iteration session churn only exists to dodge the
- * constrained-decoding limit, so it goes away at the same time.
+ * When Chrome has native tool use, agents use runNativeToolLoop instead
+ * (native-tool-loop.js): one session, no constrained decoding. This loop is
+ * the fallback.
  */
 export const runToolLoop = async (
   createIterationSession,
@@ -372,17 +388,7 @@ export const runToolLoop = async (
         const t0 = Date.now();
         const resultStr = await tool.execute(tc.args);
         debug.timing(`tool:${tc.name}`, Date.now() - t0);
-        // Collect URLs from raw result before trimming
-        try {
-          const parsed = JSON.parse(resultStr);
-          if (parsed && Array.isArray(parsed.posts)) {
-            for (const post of parsed.posts) {
-              if (post.href) collectedUrls.add(post.href);
-            }
-          }
-        } catch {
-          /* not JSON with posts */
-        }
+        collectPostUrls(resultStr, collectedUrls);
         const trimmed = trimResult(resultStr, effectiveMaxResultTokens);
         debug(agentName, `=== TOOL RESULT: ${tc.name} ===\n` + trimmed);
         emit("tool-result", {

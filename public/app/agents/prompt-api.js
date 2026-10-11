@@ -1,4 +1,4 @@
-/* global LanguageModel:false, setTimeout:false, DOMException:false */
+/* global LanguageModel:false, LanguageModelToolSuccess:false, LanguageModelToolError:false, setTimeout:false, DOMException:false */
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
 
@@ -106,44 +106,140 @@ export const createSession = async (systemPrompt) => {
 };
 
 /**
- * Create a session that is aware of tools.
- * When Chrome ships native tool support, tools are passed to LanguageModel.create()
- * and session.prompt() handles the tool loop internally.
- * Until then, behaves identically to createSession (tools are handled manually).
+ * Create a session for the manual tool loop (see runToolLoop). The model does
+ * not see the tools as declarations here: the loop describes them in the system
+ * prompt and reads tool calls out of constrained JSON.
  *
  * `history` is replayed into `initialPrompts` after the system prompt. Callers
  * use this to rebuild a conversation on a fresh session — see the one-constraint
  * -per-session limitation documented on promptSessionConstrained().
  */
-export const createToolSession = async (
-  systemPrompt,
-  tools = [],
-  history = [],
-) => {
-  const opts = {
-    ...PROMPT_OPTIONS,
-    initialPrompts: [{ role: "system", content: systemPrompt }, ...history],
-  };
-  // When Chrome ships native tool support, this branch activates
-  if (hasNativeToolSupport() && tools.length > 0) {
-    opts.tools = tools;
-  }
+export const createToolSession = async (systemPrompt, history = []) => {
   debug(
     "prompt-api",
     "Creating tool session, system prompt length:",
     systemPrompt.length,
-    "tools:",
-    tools.length,
   );
   const t0 = Date.now();
-  const session = await LanguageModel.create(opts);
+  const session = await LanguageModel.create({
+    ...PROMPT_OPTIONS,
+    initialPrompts: [{ role: "system", content: systemPrompt }, ...history],
+  });
   debug.timing("createToolSession", Date.now() - t0);
   debug("prompt-api", "Tool session created, inputQuota:", session.inputQuota);
   return session;
 };
 
-// Placeholder — will refine when the Prompt API tool-use spec ships.
-const hasNativeToolSupport = () => false;
+/* ── Native tool use ─────────────────────────────────────────── */
+
+// Native tool use (Prompt API tool use, chrome://flags/#prompt-api-tool-use).
+// Explainer: https://github.com/webmachinelearning/prompt-api#tool-use
+//
+// As implemented in Chrome Canary 157 (Oct 2026):
+// - The page runs the tools, not Chrome. create() reads only `name`,
+//   `description` and `inputSchema` from each tool and ignores `execute`.
+//   prompt() resolves to an array of parts, such as
+//   [{ type: "tool-call", value: LanguageModelToolCall }], where the call has
+//   `callId` (empty so far), `name` and `arguments` (an object).
+// - Results go back as a user message of `tool-response` parts, each a
+//   LanguageModelToolSuccess or LanguageModelToolError. Plain objects are
+//   rejected. The whole exchange stays on one session.
+// - `tools` requires `{ type: "tool-call" }` in expectedOutputs (TypeError
+//   otherwise).
+// - availability() says "available" for tool-call outputs even with the flag
+//   off, so it cannot detect the feature. create() is the test: with the flag
+//   off it throws NotSupportedError.
+// - responseConstraint does not combine usefully with tools: the model still
+//   returns a tool call, and a second constrained prompt fails with
+//   kErrorUnknown, as it does without tools.
+// - Chrome adds each declaration to the system turn as a short
+//   `<tool name=... schema=...>` tag (see Event Logs in
+//   chrome://on-device-internals).
+const NATIVE_TOOL_OPTIONS = {
+  expectedInputs: [...PROMPT_OPTIONS.expectedInputs, { type: "tool-response" }],
+  expectedOutputs: [...PROMPT_OPTIONS.expectedOutputs, { type: "tool-call" }],
+};
+
+const PROBE_TOOL = {
+  name: "probe",
+  description: "Feature detection only.",
+  inputSchema: { type: "object", properties: {} },
+};
+
+let toolSupport = null;
+
+/**
+ * Feature-detect native tool use by creating (and destroying) a session with
+ * one tool. Cached: the answer only changes when Chrome is relaunched.
+ * @returns {Promise<{ available: boolean, reason?: string }>}
+ */
+export const checkToolSupport = () => {
+  toolSupport ??= (async () => {
+    if (
+      typeof LanguageModel === "undefined" ||
+      typeof LanguageModelToolSuccess === "undefined"
+    ) {
+      return { available: false, reason: "Not available" };
+    }
+    try {
+      const t0 = Date.now();
+      const probe = await LanguageModel.create({
+        ...NATIVE_TOOL_OPTIONS,
+        tools: [PROBE_TOOL],
+      });
+      probe.destroy();
+      debug.timing("checkToolSupport", Date.now() - t0);
+      return { available: true };
+    } catch (err) {
+      debug("prompt-api", "Native tool use probe failed:", err);
+      return { available: false, reason: `${err.name}: ${err.message}` };
+    }
+  })();
+  return toolSupport;
+};
+
+/** Create a session that declares `tools` to the model natively. */
+export const createNativeToolSession = async (systemPrompt, tools) => {
+  debug(
+    "prompt-api",
+    "Creating native tool session, system prompt length:",
+    systemPrompt.length,
+    "tools:",
+    tools.length,
+  );
+  const t0 = Date.now();
+  const session = await LanguageModel.create({
+    ...NATIVE_TOOL_OPTIONS,
+    tools: tools.map(({ name, description, inputSchema }) => ({
+      name,
+      description,
+      inputSchema,
+    })),
+    initialPrompts: [{ role: "system", content: systemPrompt }],
+  });
+  debug.timing("createNativeToolSession", Date.now() - t0);
+  return session;
+};
+
+/** A tool-response part for a call that succeeded. */
+export const toolSuccess = (call, text) => ({
+  type: "tool-response",
+  value: new LanguageModelToolSuccess({
+    callId: call.callId,
+    name: call.name,
+    result: [{ type: "text", value: text }],
+  }),
+});
+
+/** A tool-response part for a call that failed. */
+export const toolError = (call, message) => ({
+  type: "tool-response",
+  value: new LanguageModelToolError({
+    callId: call.callId,
+    name: call.name,
+    errorMessage: message,
+  }),
+});
 
 /* ── Prompting helpers ───────────────────────────────────────── */
 
@@ -221,6 +317,34 @@ export const promptSessionConstrained = async (
   logContextAfterPrompt(session, "constrained");
   debug("prompt-api", "Constrained response length:", result.length);
   return result;
+};
+
+/**
+ * Prompt a native tool session. `input` is a string or a list of messages (for
+ * tool responses). Resolves to the response split into `text` and `calls`
+ * (LanguageModelToolCall objects).
+ */
+export const promptNativeToolSession = async (
+  session,
+  input,
+  { signal } = {},
+) => {
+  const t0 = Date.now();
+  const parts = await withTimeout(
+    session.prompt(input, { signal }),
+    config.timeouts.promptMs,
+  );
+  debug.timing("nativeToolPrompt", Date.now() - t0);
+  logContextAfterPrompt(session, "native tool prompt");
+  const list =
+    typeof parts === "string" ? [{ type: "text", value: parts }] : parts;
+  return {
+    text: list
+      .filter((p) => p.type === "text")
+      .map((p) => p.value)
+      .join(""),
+    calls: list.filter((p) => p.type === "tool-call").map((p) => p.value),
+  };
 };
 
 /**

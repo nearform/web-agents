@@ -3,7 +3,7 @@ import { html } from "../util/html.js";
 import React from "react";
 
 /**
- * Platform Status Modal — shows LanguageModel API, DecisionModel API and WebMCP status
+ * Platform Status Modal — shows LanguageModel API, DecisionModel API, Prompt API tool use and WebMCP status
  * with setup instructions when features are missing.
  */
 export const PlatformStatusModal = ({ platformStatus, onClose }) => {
@@ -21,10 +21,12 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const { languageModel, decisionModel, webMcp, isChrome } = platformStatus;
+  const { languageModel, decisionModel, toolUse, webMcp, isChrome } =
+    platformStatus;
 
   const lmOk = languageModel.available;
   const decisionOk = decisionModel.available;
+  const toolUseOk = toolUse.available;
   const webMcpOk = webMcp.native;
   const webMcpPolyfilled = webMcp.polyfilled;
 
@@ -112,6 +114,34 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                   <li>
                     Open <code>chrome://flags/#decisions-api</code> and set to
                     ${" "}<strong>Enabled</strong>
+                  </li>
+                  <li>Relaunch Chrome</li>
+                </ol>
+              </div>
+            `
+          }
+
+          <div className="platform-status-row">
+            <span
+              className="platform-status-dot ${toolUseOk ? "ok" : "warn"}"
+            ></span>
+            <strong>Prompt API tool use</strong>
+            <span className="platform-status-label">
+              ${toolUseOk ? "Available" : (toolUse.reason ?? "Not Available")}
+            </span>
+          </div>
+          ${
+            !toolUseOk &&
+            html`
+              <div className="platform-status-instructions">
+                <p>
+                  Optional. Without it, agents call tools through constrained
+                  JSON output. To enable native tool calling:
+                </p>
+                <ol>
+                  <li>
+                    Open <code>chrome://flags/#prompt-api-tool-use</code> and
+                    set to${" "}<strong>Enabled</strong>
                   </li>
                   <li>Relaunch Chrome</li>
                 </ol>

@@ -1,6 +1,11 @@
 import { createToolSession } from "./prompt-api.js";
 import { makeTools } from "./tools.js";
 import { runToolLoop } from "./tool-loop.js";
+import {
+  pickToolCalling,
+  runNativeToolLoop,
+  TOOL_CALLING_LABELS,
+} from "./native-tool-loop.js";
 import { debug } from "../util/debug.js";
 import { config } from "../config.js";
 import { createEmitter } from "../util/activity.js";
@@ -40,12 +45,18 @@ const slimToolResult = (result) => {
 };
 
 /**
- * Run an agent loop: prompt the model with constrained decoding,
- * parse the structured JSON response, execute tool calls,
- * feed results back, repeat until final_answer or max iterations.
+ * Run an agent loop: prompt the model, execute the tool calls it asks for,
+ * feed results back, repeat until it answers or max iterations.
+ *
+ * Tools are called natively when Chrome supports Prompt API tool use (see
+ * pickToolCalling), otherwise through the manual constrained-JSON loop. A
+ * native run that fails is retried with the manual loop.
+ *
+ * `getSystemPrompt({ native })` returns the system prompt for each mode: the
+ * manual loop has to describe the tools and the JSON reply format itself.
  */
 export const runAgentLoop = async ({
-  systemPrompt,
+  getSystemPrompt,
   userMessage,
   tools,
   onActivity,
@@ -57,35 +68,78 @@ export const runAgentLoop = async ({
   const emit = createEmitter(agentName, onActivity);
 
   emit("start", `${agentName} starting`);
-  debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
-  if (onAgentPrompt) onAgentPrompt(agentName, "system", systemPrompt);
-  emit("prompt", {
-    summary: `${agentName} system prompt`,
-    prompt: systemPrompt,
-    kind: "system",
-  });
+
+  const { mode, check } = await pickToolCalling();
+  emit(
+    "system",
+    `Tool calling: ${TOOL_CALLING_LABELS[mode]}${
+      check && !check.available ? ` (native tool use: ${check.reason})` : ""
+    }`,
+  );
+
+  const sendSystemPrompt = (native) => {
+    const systemPrompt = getSystemPrompt({ native });
+    debug(agentName, "=== SYSTEM PROMPT ===\n" + systemPrompt);
+    if (onAgentPrompt) onAgentPrompt(agentName, "system", systemPrompt);
+    emit("prompt", {
+      summary: `${agentName} system prompt`,
+      prompt: systemPrompt,
+      kind: "system",
+    });
+    return systemPrompt;
+  };
 
   const executableTools = makeTools(tools, {
     transformResult: slimToolResult,
   });
+  const loopOptions = {
+    emit,
+    agentName,
+    onContextUpdate,
+    onAgentPrompt,
+    signal,
+  };
 
-  // One constrained prompt per session is all Chrome allows, so the loop owns
-  // session lifecycle: a fresh session per iteration, replaying `history`.
-  const createIterationSession = (history) =>
-    createToolSession(systemPrompt, executableTools, history);
+  const runManual = () => {
+    const systemPrompt = sendSystemPrompt(false);
+    // One constrained prompt per session is all Chrome allows, so the loop
+    // owns session lifecycle: a fresh session per iteration, replaying
+    // `history`.
+    const createIterationSession = (history) =>
+      createToolSession(systemPrompt, history);
+    return runToolLoop(
+      createIterationSession,
+      userMessage,
+      executableTools,
+      loopOptions,
+    );
+  };
 
-  const { text, validUrls } = await runToolLoop(
-    createIterationSession,
-    userMessage,
-    executableTools,
-    {
-      emit,
-      agentName,
-      onContextUpdate,
-      onAgentPrompt,
-      signal,
-    },
-  );
+  let result;
+  if (mode === "native") {
+    try {
+      result = await runNativeToolLoop(
+        sendSystemPrompt(true),
+        userMessage,
+        executableTools,
+        loopOptions,
+      );
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      debug.warn(
+        agentName,
+        `Native tool loop failed: ${err.name}: ${err.message}`,
+      );
+      emit(
+        "error",
+        `Native tool calling failed, using the manual tool loop: ${err.message}`,
+      );
+      result = await runManual();
+    }
+  } else {
+    result = await runManual();
+  }
+  const { text, validUrls } = result;
   emit("done", `${agentName} finished`);
 
   if (validUrls && validUrls.length > 0) {

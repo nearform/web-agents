@@ -101,7 +101,24 @@ const getResearcherTopicGuidance = (query) => {
   return parts.length ? "\n" + parts.join("\n\n") + "\n" : "";
 };
 
-export const getResearcherSystemPrompt = (tools, query = "") => {
+// With native tool use, Chrome gives the model the tool declarations and the
+// model answers in plain text, so the tool list and JSON reply format are only
+// needed for the manual loop.
+const MANUAL_TOOL_FORMAT = (tools) => `## Tools
+${formatToolSchemas(tools)}
+
+## Response Format
+You MUST respond with JSON containing an "action" field.
+- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
+- To give your final answer: {"action": "final_answer", "text": "your summary here"}
+
+`;
+
+export const getResearcherSystemPrompt = (
+  tools,
+  query = "",
+  { native = false } = {},
+) => {
   const topicGuidance = getResearcherTopicGuidance(query);
 
   return `You are a Research Agent for Nearform. Search for relevant content using tools, then summarize findings.
@@ -110,27 +127,19 @@ ${NEARFORM_IDENTITY}
 
 ${BRAND_RULES}
 
-## Tools
-${formatToolSchemas(tools)}
-
-## Response Format
-You MUST respond with JSON containing an "action" field.
-- To call a tool: {"action": "tool_call", "tool_name": "...", "tool_args": {...}}
-- To give your final answer: {"action": "final_answer", "text": "your summary here"}
-
-## Category Filtering
+${native ? "" : MANUAL_TOOL_FORMAT(tools)}## Category Filtering
 categoryPrimary filters by category (array). Available: ai, design, backend, frontend, oss, cloud, work, product, mobile, devops, data, test, perf, security, a11y
 
 Include ALL relevant categories. Omit categoryPrimary for broad/cross-cutting queries.
 
 ## Post Type Filtering
-NEVER include postType in tool_args. Omit it completely.
+NEVER include postType in ${native ? "the search arguments" : "tool_args"}. Omit it completely.
 Only exception: user literally writes "case studies" or "client projects".
 ${topicGuidance}
 ## Instructions
 - Call search_nearform_knowledge at least once.
 - You may make multiple searches with different queries.
-- Return final_answer using the two-section structure below.
+- ${native ? "When you are done searching, answer in plain markdown (no JSON)" : "Return final_answer"} using the two-section structure below.
 - Only use URLs from tool results. Normalize prefixes: remove www./commerce., replace /blog/ with /insights/. Discard truncated URLs.
 - Do NOT add general knowledge. Your entire answer must come from tool results.
 - Be thorough: the writer agent depends on your output. Include more detail rather than less.

@@ -12,6 +12,7 @@ import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
 import { pickTriageStrategy } from "./agents/triage.js";
+import { pickToolCalling } from "./agents/native-tool-loop.js";
 import { runCoordinator } from "./agents/coordinator.js";
 import { detectPlatformStatus } from "./util/platform.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
@@ -100,7 +101,12 @@ export const App = () => {
         available: false,
         reason: "Not used (?triage=prompt-api)",
       };
-      const ps = detectPlatformStatus(apiCheck, decisionCheck);
+      const toolCalling = await pickToolCalling();
+      const toolCheck = toolCalling.check ?? {
+        available: false,
+        reason: "Not used (?toolcalls=manual)",
+      };
+      const ps = detectPlatformStatus(apiCheck, decisionCheck, toolCheck);
       setPlatformStatus(ps);
 
       // Auto-open modal if LanguageModel is unavailable
@@ -322,6 +328,14 @@ export const App = () => {
                 className="status-badge status-badge--ready"
                 title="Triage uses the Chrome Decisions API (DecisionModel)"
                 >Decisions API</span
+              >`
+          }
+          ${
+            platformStatus?.toolUse.available &&
+            html`${" "}<span
+                className="status-badge status-badge--ready"
+                title="Agents call tools with Prompt API tool use"
+                >Native tools</span
               >`
           }
           ${" "}
