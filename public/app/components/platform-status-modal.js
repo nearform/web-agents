@@ -69,18 +69,12 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                         <ol>
                           <li>Use <strong>Chrome 138+</strong></li>
                           <li>
-                            Open
-                            <code
-                              >chrome://flags/#optimization-guide-on-device-model</code
-                            >
-                            and set to <strong>Enabled</strong>
+                            Open <code>chrome://flags/#prompt-api</code> and set
+                            to <strong>Enabled</strong>
                           </li>
                           <li>
-                            Open
-                            <code
-                              >chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code
-                            >
-                            and set to <strong>Enabled</strong>
+                            Open <code>chrome://settings/ai</code> and turn on
+                            <strong>"On-device AI"</strong>
                           </li>
                           <li>Relaunch Chrome</li>
                         </ol>
