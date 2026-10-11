@@ -5,10 +5,29 @@
 // Behind chrome://flags/#decisions-api (desktop Chrome, Oct 2026).
 //
 // As implemented in Canary today, it wraps a general on-device model rather
-// than a trained decision model: an LLM prompted with lettered options (the
-// letter probabilities are the scores) or EmbeddingGemma similarity. Each
-// question is a separate pass over the whole input, so cost grows with
-// questions x input length.
+// than a trained decision model: Gemma 4, prompted with lettered options (the
+// letter probabilities are the scores). Chrome also lists Laya decision models
+// in chrome://on-device-internals, but they are not installed or used yet.
+//
+// It runs on CPU only. Turning on chrome://flags/#decisions-api also turns on
+// the `OnDeviceModelForceCpuBackend` feature (see the command line in
+// chrome://gpu), which moves every on-device model to CPU, the Prompt API
+// included, even on machines with a capable GPU. Reportedly that is because
+// scoring options on GPU gave wrong scores or crashed the model service.
+// The `preference` create() option ("auto" | "speed" | "capability") is
+// accepted but changed nothing in Chrome 157.
+//
+// Measured on Chrome Canary 157 (Apple M5 Max, Oct 2026): about 0.35 ms per
+// input character plus ~150 ms for one question, and ~270 ms per extra
+// question (the input is read once). In end-to-end runs it was not much
+// slower than Prompt API triage on GPU in regular Chrome.
+//
+// - Code-level write-up (prompts, engines, CPU-only scoring):
+//   https://dejan.ai/blog/chrome-decisions-api-decisionmodel/
+// - CPU vs GPU built-in models:
+//   https://developer.chrome.com/blog/gemini-nano-cpu-support
+// - Intent to Prototype:
+//   https://www.mail-archive.com/blink-dev@chromium.org/msg17639.html
 //
 // The schemas that use this live in triage.js.
 import { debug } from "../util/debug.js";
