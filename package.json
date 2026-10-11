@@ -4,8 +4,12 @@
   "description": "Agents in the browser with WebMCP and Chrome Prompt API.",
   "type": "module",
   "license": "MIT",
+  "config": {
+    "cdp_canary_port": "4690"
+  },
   "scripts": {
     "dev": "npx serve -p 4610",
+    "cdp:canary": "if pgrep -f 'web-agents-[c]anary' >/dev/null; then if curl -sf -m 2 127.0.0.1:$npm_package_config_cdp_canary_port/json/version >/dev/null; then echo \"Canary already running on :$npm_package_config_cdp_canary_port\"; else echo \"a web-agents Canary is running, but not on :$npm_package_config_cdp_canary_port. Quit it (pkill -f web-agents-canary) and run this again.\" >&2; exit 1; fi; else open -na 'Google Chrome Canary' --args --remote-debugging-port=$npm_package_config_cdp_canary_port --remote-allow-origins='*' --user-data-dir=$HOME/.cache/web-agents-canary --no-first-run --no-default-browser-check http://127.0.0.1:4610/public/; fi",
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint . --quiet",
     "pretty:fix": "prettier . --write",

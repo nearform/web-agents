@@ -5,7 +5,7 @@ export const getModelContext = () =>
 /**
  * Detect platform capabilities for the status modal.
  * @param {{ available: boolean, reason?: string }} apiCheck — result of checkAvailability()
- * @param {{ available: boolean, status?: string, reason?: string }} decisionCheck — result of checkDecisionAvailability()
+ * @param {{ available: boolean, status?: string, reason?: string }} decisionCheck — result of checkDecisionAvailability(), via pickTriageStrategy()
  * @returns {{ languageModel: { available: boolean, reason?: string }, decisionModel: { available: boolean, status: string|null, reason: string|null }, webMcp: { native: boolean, polyfilled: boolean, chromeVersion: number|null }, isChrome: boolean }}
  */
 export function detectPlatformStatus(apiCheck, decisionCheck) {

@@ -20,7 +20,7 @@ Some other neat things:
 ## Prerequisites
 
 - **Chrome** with the Prompt API / Language Model API enabled (provides the on-device LLM)
-- _Optional_: the [Decisions API](https://github.com/explainers-by-googlers/decisions-api) (`DecisionModel`, `chrome://flags/#decisions-api`). When present, the Coordinator uses it to decide whether a follow-up needs new research; otherwise it asks the Prompt API. Add `?decisions=off` to force the Prompt API for comparison.
+- _Optional_: the [Decisions API](https://github.com/explainers-by-googlers/decisions-api) (`DecisionModel`, `chrome://flags/#decisions-api`). When present, the Coordinator uses it to decide whether a follow-up needs new research; otherwise it asks the Prompt API. Pick a strategy with `?triage=prompt-api|decision-choice|decision-booleans`, and compare them on labelled cases at `/public/tests/triage.html`.
 - **[vector-search-web](https://github.com/nearform/vector-search-web)** provides the `search_nearform_knowledge` tool. (Runs on `http://localhost:4600` in localdev and https://nearform.github.io/vector-search-web/ in production).
 
 ## Development

@@ -111,7 +111,7 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                 <ol>
                   <li>
                     Open <code>chrome://flags/#decisions-api</code> and set to
-                    <strong>Enabled</strong>
+                    ${" "}<strong>Enabled</strong>
                   </li>
                   <li>Relaunch Chrome</li>
                 </ol>
@@ -164,11 +164,10 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                         <ol>
                           <li>Use <strong>Chrome 146+</strong></li>
                           <li>
-                            Open <code>chrome://flags</code> and search
-                            for${" "}
-                            <strong>WebMCP</strong>
+                            Open
+                            <code>chrome://flags/#enable-webmcp-testing</code>
+                            ${" "}and set to <strong>Enabled</strong>
                           </li>
-                          <li>Enable <strong>"WebMCP for testing"</strong></li>
                           <li>Relaunch Chrome</li>
                         </ol>
                       `

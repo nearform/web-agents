@@ -2,30 +2,10 @@
 import { runResearcher } from "./researcher.js";
 import { runWriter } from "./writer.js";
 import { debug } from "../util/debug.js";
-import {
-  createSession,
-  promptSessionConstrained,
-  getContextInfo,
-} from "./prompt-api.js";
 import { createEmitter } from "../util/activity.js";
 import { config } from "../config.js";
-import { getTriageSystemPrompt } from "./prompts.js";
-import { formatChatHistory } from "../util/chat-history.js";
-import {
-  TRIAGE_DECISION_SCHEMA,
-  checkDecisionAvailability,
-  decide,
-  getDecisionSession,
-  getTriageDecision,
-} from "./decision-api.js";
-
-const TRIAGE_SCHEMA = {
-  type: "object",
-  properties: {
-    needs_research: { type: "boolean" },
-  },
-  required: ["needs_research"],
-};
+import { getDecisionSession } from "./decision-api.js";
+import { STRATEGIES, buildTriageInput, pickTriageStrategy } from "./triage.js";
 
 const truncateHalf = (text) => {
   if (!text) return text;
@@ -36,180 +16,53 @@ const truncateHalf = (text) => {
   return text.slice(0, end) + "\n...[truncated for retry]";
 };
 
-// Links are noise for triage: keep a link's text, drop its URL and bare URLs.
-const stripLinks = (text) =>
-  text
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/\(?https?:\/\/[^\s)]+\)?/g, "")
-    .replace(/[ \t]{2,}/g, " ");
-
-const stripMarkdown = (text) =>
-  stripLinks(text)
-    .replace(/[*_`#]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-// Lines under a "## {name}" heading, up to the next heading.
-const getSection = (lines, name) => {
-  const start = lines.findIndex((l) => new RegExp(`^## ${name}`).test(l));
-  if (start === -1) return [];
-  const end = lines.findIndex((l, i) => i > start && /^## /.test(l));
-  return lines.slice(start + 1, end === -1 ? undefined : end);
-};
-
 /**
- * Plain-text outline of the notepad for triage, most telling parts first:
- * post titles, then section headings, then the summary (cut to fit).
+ * Decide whether a follow-up needs new research, with the strategy picked by
+ * pickTriageStrategy() (see triage.js). A failing DecisionModel strategy falls
+ * back to the Prompt API.
  */
-const extractNotepadOutline = (notepad, budget = 1500) => {
-  if (!notepad) return "";
-  const lines = notepad.split("\n");
-
-  // Post titles: the bold lead of each bullet under "## Posts"
-  // (`*   **Title**: ...`), plus researcher-style `**[Title](URL)**` lines.
-  const postTitles = [
-    ...getSection(lines, "Posts").map(
-      (l) => l.match(/^\s*[-*]\s+\*\*(.+?)\*\*/)?.[1],
-    ),
-    ...lines.map((l) => l.match(/\*\*\[(.+?)\]\(https?:\/\/[^)]+\)\*\*/)?.[1]),
-  ]
-    .filter(Boolean)
-    .map(stripMarkdown);
-  const uniqueTitles = [...new Set(postTitles)];
-
-  const headings = lines
-    .filter((l) => /^## /.test(l))
-    .map((l) => l.replace(/^## /, "").trim());
-
-  const summaryText = stripMarkdown(getSection(lines, "Summary").join(" "));
-
-  const parts = [];
-  if (uniqueTitles.length) {
-    parts.push(`Posts:\n${uniqueTitles.map((t) => `- ${t}`).join("\n")}`);
-  }
-  if (headings.length) parts.push(`Sections: ${headings.join(", ")}`);
-  const head = parts.join("\n");
-
-  // The summary gets whatever budget is left, cut at a word boundary.
-  const room = budget - head.length - "\nSummary: ".length;
-  if (!summaryText || room < 80) return head.slice(0, budget);
-  const summary =
-    summaryText.length <= room
-      ? summaryText
-      : summaryText.slice(0, summaryText.lastIndexOf(" ", room - 3)) + "...";
-  return head ? `${head}\nSummary: ${summary}` : `Summary: ${summary}`;
-};
-
-// The text both triage paths judge: notepad outline, recent chat, follow-up.
-const buildTriageInput = (userMessage, existingNotepad, chatHistory) => {
-  const history = stripLinks(
-    formatChatHistory(chatHistory, { maxChars: 1500 }),
-  ).trim();
-  const outline =
-    extractNotepadOutline(existingNotepad) ||
-    stripMarkdown(existingNotepad).slice(0, 1500);
-  return `Existing notepad outline:\n${outline}${history ? `\n\nRecent conversation:\n${history}` : ""}\n\nUser follow-up: "${userMessage}"`;
-};
-
-async function triageWithDecisionApi(
-  userMessage,
-  existingNotepad,
-  chatHistory,
-  emit,
-  onAgentPrompt,
-) {
-  const input = buildTriageInput(userMessage, existingNotepad, chatHistory);
-  const schemaText = JSON.stringify(TRIAGE_DECISION_SCHEMA, null, 2);
-  if (onAgentPrompt) {
-    onAgentPrompt(
-      "Coordinator",
-      "system",
-      `DecisionModel schema:\n${schemaText}`,
-    );
-    onAgentPrompt("Coordinator", "user", input);
-  }
-  emit("prompt", {
-    summary: "Triage: DecisionModel.decide() — deciding if research needed",
-    prompt: `Schema:\n${schemaText}\n\nInput:\n${input}`,
-    kind: "triage",
-  });
-
-  const { result, ms } = await decide(input, emit);
-  const { needsResearch, reason, signals } = getTriageDecision(result);
-  const probs = Object.entries(signals)
-    .map(([id, p]) => `${id} ${p.toFixed(2)}`)
-    .join(", ");
-  const summary = `Triage (DecisionModel): needs_research = ${needsResearch} (${reason}) — p(true): ${probs} (${ms}ms)`;
-  if (onAgentPrompt) onAgentPrompt("Coordinator", "answer", summary);
-  emit("received", { summary, result: JSON.stringify(result, null, 2) });
-  return { needsResearch, contextInfo: null };
-}
-
 async function triageFollowUp(
   userMessage,
   existingNotepad,
   chatHistory,
   emit,
   onAgentPrompt,
-  useDecisionApi,
+  strategyKey,
 ) {
-  if (useDecisionApi) {
-    try {
-      return await triageWithDecisionApi(
-        userMessage,
-        existingNotepad,
-        chatHistory,
-        emit,
-        onAgentPrompt,
-      );
-    } catch (err) {
-      emit(
-        "error",
-        `DecisionModel triage failed, using Prompt API triage: ${err.message}`,
-      );
-    }
-  }
-  return triageWithPromptApi(
+  const strategy = STRATEGIES[strategyKey];
+  const input = buildTriageInput({
     userMessage,
-    existingNotepad,
+    notepad: existingNotepad,
     chatHistory,
-    emit,
-    onAgentPrompt,
-  );
-}
+  });
+  const request = strategy.describe(input, userMessage);
+  if (onAgentPrompt) onAgentPrompt("Coordinator", "user", request);
+  emit("prompt", {
+    summary: `Triage (${strategy.label}): deciding if research needed`,
+    prompt: request,
+    kind: "triage",
+  });
 
-async function triageWithPromptApi(
-  userMessage,
-  existingNotepad,
-  chatHistory,
-  emit,
-  onAgentPrompt,
-) {
-  const triageSystemPrompt = getTriageSystemPrompt(userMessage);
-  if (onAgentPrompt) onAgentPrompt("Coordinator", "system", triageSystemPrompt);
-  const session = await createSession(triageSystemPrompt);
   try {
-    const prompt = buildTriageInput(userMessage, existingNotepad, chatHistory);
-    if (onAgentPrompt) onAgentPrompt("Coordinator", "user", prompt);
-    if (emit) {
-      emit("prompt", {
-        summary: "Triage: deciding if research needed",
-        prompt,
-        kind: "triage",
-      });
-    }
-    const raw = await promptSessionConstrained(session, prompt, TRIAGE_SCHEMA);
-    const contextInfo = getContextInfo(session);
-    const parsed = JSON.parse(raw);
-    if (onAgentPrompt)
-      onAgentPrompt(
-        "Coordinator",
-        "answer",
-        `Triage: needs_research = ${parsed.needs_research}`,
-      );
-    return { needsResearch: parsed.needs_research === true, contextInfo };
-  } finally {
-    session.destroy();
+    const r = await strategy.run(input, { userMessage, emit });
+    const summary = `Triage (${strategy.label}): needs_research = ${r.needsResearch} — ${r.reason} (${r.ms}ms)`;
+    if (onAgentPrompt) onAgentPrompt("Coordinator", "answer", summary);
+    emit("received", { summary, result: JSON.stringify(r.raw, null, 2) });
+    return { needsResearch: r.needsResearch, contextInfo: r.contextInfo };
+  } catch (err) {
+    if (!strategy.schema) throw err;
+    emit(
+      "error",
+      `${strategy.label} triage failed, using Prompt API triage: ${err.message}`,
+    );
+    return triageFollowUp(
+      userMessage,
+      existingNotepad,
+      chatHistory,
+      emit,
+      onAgentPrompt,
+      "prompt-api",
+    );
   }
 }
 
@@ -229,7 +82,7 @@ async function runCoordinatorPipeline({
   reportStatus,
   onAgentPrompt,
   signal,
-  useDecisionApi,
+  triageStrategy,
 }) {
   // Coordinator's own context info (only from triage session)
   let coordinatorContextInfo = null;
@@ -246,7 +99,7 @@ async function runCoordinatorPipeline({
         chatHistory,
         emit,
         onAgentPrompt,
-        useDecisionApi,
+        triageStrategy,
       );
       debug.timing("triage", Date.now() - t0);
       needsResearch = triage.needsResearch;
@@ -439,8 +292,8 @@ async function runCoordinatorPipeline({
  * - existingNotepad + LLM triage=true   → research runs, notepad merged
  * - existingNotepad + LLM triage=false  → skip research, chat-only answer
  *
- * Triage uses the Chrome Decisions API (DecisionModel) when available, and
- * the Prompt API otherwise or if the DecisionModel call fails.
+ * Triage strategies live in triage.js: a DecisionModel one when available
+ * (or ?triage=<key>), else the Prompt API, which is also the fallback.
  *
  * On timeout failures, retries the full pipeline with fresh sessions.
  */
@@ -465,17 +318,17 @@ export const runCoordinator = async ({
   emit("start", "Analyzing your request...");
   const startTime = Date.now();
 
-  // Use the Chrome Decisions API for triage when present. Create the session
-  // now, while the send click still counts as user activation (needed if the
-  // model must download), so it is ready by the time a follow-up is triaged.
-  const decisionCheck = await checkDecisionAvailability();
-  const useDecisionApi = decisionCheck.available;
-  if (useDecisionApi) {
-    emit(
-      "system",
-      `DecisionModel available (${decisionCheck.status}) — using it for triage`,
-    );
-    getDecisionSession(emit).catch((err) =>
+  // Pick the triage strategy. For a DecisionModel one, create the session now,
+  // while the send click still counts as user activation (needed if the model
+  // must download), so it is ready by the time a follow-up is triaged.
+  const { key: triageStrategy, check } = await pickTriageStrategy();
+  const { label, schema } = STRATEGIES[triageStrategy];
+  emit(
+    "system",
+    `Triage strategy: ${label}${check ? ` (DecisionModel: ${check.status ?? check.reason})` : ""}`,
+  );
+  if (schema) {
+    getDecisionSession(schema, emit).catch((err) =>
       debug.warn("Coordinator", `DecisionModel create failed: ${err.message}`),
     );
   }
@@ -494,7 +347,7 @@ export const runCoordinator = async ({
         reportStatus,
         onAgentPrompt,
         signal,
-        useDecisionApi,
+        triageStrategy,
       });
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       emit("system", `Total elapsed time: ${elapsed}s`);

@@ -11,7 +11,7 @@ import { config } from "./config.js";
 import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
-import { checkDecisionAvailability } from "./agents/decision-api.js";
+import { pickTriageStrategy } from "./agents/triage.js";
 import { runCoordinator } from "./agents/coordinator.js";
 import { detectPlatformStatus } from "./util/platform.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
@@ -95,7 +95,11 @@ export const App = () => {
       setTools(discovered);
 
       // Detect platform status
-      const decisionCheck = await checkDecisionAvailability();
+      const { check } = await pickTriageStrategy();
+      const decisionCheck = check ?? {
+        available: false,
+        reason: "Not used (?triage=prompt-api)",
+      };
       const ps = detectPlatformStatus(apiCheck, decisionCheck);
       setPlatformStatus(ps);
 
