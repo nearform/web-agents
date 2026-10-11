@@ -273,12 +273,12 @@ const ToolDetailModal = ({ tool, onClose }) => {
             </div>
             <pre className="tool-modal-result">
 ${
-  result == null
-    ? "No output yet. Execute the tool to see results."
-    : result.ok
-      ? JSON.stringify(result.data, null, 2)
-      : `Error: ${result.data}`
-}</pre>
+                result == null
+                  ? "No output yet. Execute the tool to see results."
+                  : result.ok
+                    ? JSON.stringify(result.data, null, 2)
+                    : `Error: ${result.data}`
+              }</pre>
           </div>
         </div>
       </div>
