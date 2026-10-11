@@ -11,6 +11,7 @@ import { config } from "./config.js";
 import { setNotepadCallback, updateNotepad } from "./tools/notepad-tools.js";
 import { setDebugActivityCallback } from "./util/debug.js";
 import { checkAvailability } from "./agents/prompt-api.js";
+import { checkDecisionAvailability } from "./agents/decision-api.js";
 import { runCoordinator } from "./agents/coordinator.js";
 import { detectPlatformStatus } from "./util/platform.js";
 import { PlatformStatusModal } from "./components/platform-status-modal.js";
@@ -94,7 +95,8 @@ export const App = () => {
       setTools(discovered);
 
       // Detect platform status
-      const ps = detectPlatformStatus(apiCheck);
+      const decisionCheck = await checkDecisionAvailability();
+      const ps = detectPlatformStatus(apiCheck, decisionCheck);
       setPlatformStatus(ps);
 
       // Auto-open modal if LanguageModel is unavailable
@@ -310,6 +312,14 @@ export const App = () => {
           >
             ${status}
           </span>
+          ${
+            platformStatus?.decisionModel.available &&
+            html`${" "}<span
+                className="status-badge status-badge--ready"
+                title="Triage uses the Chrome Decisions API (DecisionModel)"
+                >Decisions API</span
+              >`
+          }
           ${" "}
           <a
             href="https://github.com/nearform/web-agents"

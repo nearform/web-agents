@@ -3,7 +3,7 @@ import { html } from "../util/html.js";
 import React from "react";
 
 /**
- * Platform Status Modal — shows LanguageModel API and WebMCP status
+ * Platform Status Modal — shows LanguageModel API, DecisionModel API and WebMCP status
  * with setup instructions when features are missing.
  */
 export const PlatformStatusModal = ({ platformStatus, onClose }) => {
@@ -21,9 +21,10 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const { languageModel, webMcp, isChrome } = platformStatus;
+  const { languageModel, decisionModel, webMcp, isChrome } = platformStatus;
 
   const lmOk = languageModel.available;
+  const decisionOk = decisionModel.available;
   const webMcpOk = webMcp.native;
   const webMcpPolyfilled = webMcp.polyfilled;
 
@@ -80,6 +81,40 @@ export const PlatformStatusModal = ({ platformStatus, onClose }) => {
                         </ol>
                       `
                 }
+              </div>
+            `
+          }
+
+          <div className="platform-status-row">
+            <span
+              className="platform-status-dot ${decisionOk ? "ok" : "warn"}"
+            ></span>
+            <strong>DecisionModel API</strong>
+            <span className="platform-status-label">
+              ${
+                !decisionOk
+                  ? (decisionModel.reason ?? "Not Available")
+                  : decisionModel.status === "available"
+                    ? "Available"
+                    : `Available (${decisionModel.status})`
+              }
+            </span>
+          </div>
+          ${
+            !decisionOk &&
+            html`
+              <div className="platform-status-instructions">
+                <p>
+                  Optional. Without it, triage uses the Prompt API. To enable
+                  the Decisions API:
+                </p>
+                <ol>
+                  <li>
+                    Open <code>chrome://flags/#decisions-api</code> and set to
+                    <strong>Enabled</strong>
+                  </li>
+                  <li>Relaunch Chrome</li>
+                </ol>
               </div>
             `
           }

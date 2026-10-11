@@ -5,9 +5,10 @@ export const getModelContext = () =>
 /**
  * Detect platform capabilities for the status modal.
  * @param {{ available: boolean, reason?: string }} apiCheck — result of checkAvailability()
- * @returns {{ languageModel: { available: boolean, reason?: string }, webMcp: { native: boolean, polyfilled: boolean, chromeVersion: number|null }, isChrome: boolean }}
+ * @param {{ available: boolean, status?: string, reason?: string }} decisionCheck — result of checkDecisionAvailability()
+ * @returns {{ languageModel: { available: boolean, reason?: string }, decisionModel: { available: boolean, status: string|null, reason: string|null }, webMcp: { native: boolean, polyfilled: boolean, chromeVersion: number|null }, isChrome: boolean }}
  */
-export function detectPlatformStatus(apiCheck) {
+export function detectPlatformStatus(apiCheck, decisionCheck) {
   // LanguageModel API status — reuse the check that was already performed
   const languageModel = {
     available: apiCheck.available,
@@ -24,8 +25,16 @@ export function detectPlatformStatus(apiCheck) {
   const native = !!(modelContext && !modelContext.__isWebMCPPolyfill);
   const polyfilled = !!(modelContext && modelContext.__isWebMCPPolyfill);
 
+  // DecisionModel (Decisions API) status — optional, used for triage
+  const decisionModel = {
+    available: decisionCheck.available,
+    status: decisionCheck.status ?? null,
+    reason: decisionCheck.reason ?? null,
+  };
+
   return {
     languageModel,
+    decisionModel,
     webMcp: { native, polyfilled, chromeVersion },
     isChrome,
   };
