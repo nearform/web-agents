@@ -28,7 +28,7 @@ Some other neat things:
 Run the development server:
 
 ```sh
-# Navigate to http://127.0.0.1:4610/public
+# Navigate to http://localhost:4610/public
 npm run dev
 ```
 
