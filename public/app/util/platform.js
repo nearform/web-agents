@@ -1,6 +1,18 @@
 /* global navigator:false,document:false */
-export const getModelContext = () =>
-  document.modelContext ?? navigator.modelContext;
+import { installWebMCP } from "@mcp-b/webmcp-polyfill";
+
+let nativeWebMcp = false;
+
+/**
+ * Install the WebMCP polyfill, noting first whether the browser already has a
+ * native `document.modelContext` (the polyfill leaves a native one in place).
+ */
+export const initWebMcp = () => {
+  nativeWebMcp = !!document.modelContext;
+  installWebMCP();
+};
+
+export const getModelContext = () => document.modelContext;
 
 /**
  * Detect platform capabilities for the status modal.
@@ -21,8 +33,8 @@ export function detectPlatformStatus(apiCheck) {
 
   // WebMCP detection
   const modelContext = getModelContext();
-  const native = !!(modelContext && !modelContext.__isWebMCPPolyfill);
-  const polyfilled = !!(modelContext && modelContext.__isWebMCPPolyfill);
+  const native = !!modelContext && nativeWebMcp;
+  const polyfilled = !!modelContext && !nativeWebMcp;
 
   return {
     languageModel,

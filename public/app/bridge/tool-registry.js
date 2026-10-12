@@ -1,4 +1,3 @@
-/* global navigator:false */
 import {
   initBridge,
   discoverTools,
@@ -59,13 +58,15 @@ export const callTool = async (name, args) => {
   debug("tool-registry", "callTool:", name, args);
   const localTool = TOOLS.find((t) => t.name === name);
   if (localTool) {
-    // Prefer `modelContextTesting` to gut check tooling invocation, but it only
-    // exists when the WebMCP polyfill installs its shim. A native
-    // `navigator.modelContext` makes the polyfill defer and install nothing, so
-    // fall back to invoking the tool directly.
-    const testing = navigator.modelContextTesting;
-    const result = testing
-      ? await testing.executeTool(localTool.name, JSON.stringify(args))
+    // Prefer `executeTool` to gut check tooling invocation through WebMCP
+    // (native or polyfilled). Fall back to invoking the tool directly when
+    // WebMCP is unavailable or the tool did not register.
+    const modelContext = getModelContext();
+    const registeredTool = modelContext
+      ? (await modelContext.getTools()).find((t) => t.name === name)
+      : null;
+    const result = registeredTool
+      ? await modelContext.executeTool(registeredTool, args ?? {})
       : await localTool.execute(args ?? {});
     debug("tool-registry", "Local tool result:", name, result);
     return unwrapContent(result);
