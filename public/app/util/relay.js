@@ -22,7 +22,12 @@ const RELAY_DISABLED = /^(false|0|no|off)$/i.test(params.get("relay") ?? "");
 const RELAY_HOST = params.get("relayHost") || "127.0.0.1";
 const RELAY_PORT = params.get("relayPort") || "9333";
 const RELAY_URL = `ws://${RELAY_HOST}:${RELAY_PORT}`;
-const PROBE_TIMEOUT_MS = 600;
+// A safety net only: with no relay listening, the connection is refused and
+// `error` fires within milliseconds. Keep it generous, because the probe runs
+// while the page is still loading. If the main thread is busy past the timeout,
+// the timer can run before an `open` that already happened, and we'd close a
+// working connection.
+const PROBE_TIMEOUT_MS = 5000;
 
 /**
  * Check whether a local WebMCP relay is listening, without loading the embed.
@@ -58,6 +63,25 @@ const relayIsUp = () =>
   });
 
 /**
+ * Warn when native WebMCP returns `inputSchema` as a JSON string. Some Chrome
+ * versions do (seen on 154 with the "WebMCP for testing" flag), and the relay
+ * widget then skips each such tool as "malformed". The polyfill returns
+ * objects, so this only shows up with native WebMCP.
+ */
+const warnOnStringSchemas = async () => {
+  const tools = (await document.modelContext?.getTools()) ?? [];
+  const names = tools
+    .filter((tool) => typeof tool.inputSchema === "string")
+    .map((tool) => tool.name);
+  if (names.length === 0) return;
+  console.warn(
+    `[webmcp-relay] This Chrome's native WebMCP returns tool input schemas as strings, ` +
+      `so the relay will skip: ${names.join(", ")}. ` +
+      `Update Chrome, or turn off the "WebMCP for testing" flag in chrome://flags to use the polyfill.`,
+  );
+};
+
+/**
  * Load the local relay embed, which bridges this page's WebMCP tools to an
  * external MCP client (Claude Desktop and friends). Purely optional — the demo
  * itself never talks to the relay — so a missing one is logged, not an error.
@@ -86,6 +110,7 @@ export const initLocalRelay = async () => {
     );
     return false;
   }
+  await warnOnStringSchemas();
 
   const script = document.createElement("script");
   script.src = embedSrc;
