@@ -5,7 +5,7 @@ import {
 } from "./iframe-bridge.js";
 import { TOOLS } from "../tools/index.js";
 import { debug } from "../util/debug.js";
-import { getModelContext } from "../util/platform.js";
+import { executeTool, getModelContext } from "../util/platform.js";
 
 let remoteTools = [];
 let connected = false;
@@ -66,7 +66,7 @@ export const callTool = async (name, args) => {
       ? (await modelContext.getTools()).find((t) => t.name === name)
       : null;
     const result = registeredTool
-      ? await modelContext.executeTool(registeredTool, args ?? {})
+      ? await executeTool(modelContext, registeredTool, args ?? {})
       : await localTool.execute(args ?? {});
     debug("tool-registry", "Local tool result:", name, result);
     return unwrapContent(result);
