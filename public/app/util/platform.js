@@ -42,3 +42,23 @@ export function detectPlatformStatus(apiCheck) {
     isChrome,
   };
 }
+
+// Chrome 154 and earlier take `executeTool` arguments as a JSON string and
+// reject an object with "Failed to parse input arguments" before the tool
+// runs; 155+ takes the object. Nothing else tells them apart, so try the object
+// and, on that refusal, retry with the string and keep using it.
+const STRING_ARGS_REFUSAL = /parse input arguments/i;
+let stringArgs = false;
+
+/** `modelContext.executeTool`, with `args` in whichever form the host takes. */
+export const executeTool = async (modelContext, tool, args = {}) => {
+  if (!stringArgs) {
+    try {
+      return await modelContext.executeTool(tool, args);
+    } catch (err) {
+      if (!STRING_ARGS_REFUSAL.test(err?.message ?? "")) throw err;
+      stringArgs = true;
+    }
+  }
+  return modelContext.executeTool(tool, JSON.stringify(args));
+};
