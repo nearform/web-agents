@@ -46,7 +46,10 @@ export const runWriter = async ({
   };
 
   const lastUserMsg = chatHistory?.findLast((m) => m.role === "user")?.text;
-  const writerSystemPrompt = getWriterSystemPrompt(originalQuery, lastUserMsg);
+  const writerSystemPrompt = getWriterSystemPrompt(
+    [originalQuery, lastUserMsg],
+    { chatOnly: skipNotepadWrite },
+  );
 
   emit("start", "Writer starting");
   if (onAgentPrompt) onAgentPrompt("Writer", "system", writerSystemPrompt);
@@ -90,13 +93,13 @@ IMPORTANT: ONLY use URLs that appear in the research notepad below. Do NOT inven
 Research notepad:
 ${existingNotepad}
 ${earlier ? `\nEarlier conversation:\n${earlier}\n` : ""}${lastResponse ? `\nYour previous response:\n${lastResponse}\n` : ""}
-User's latest request: ${originalQuery}
-
-Do NOT summarize the entire notepad — extract only what's relevant to the request.
+Do NOT summarize or reproduce the notepad — extract only what answers the request. Keep the reply as short as the request allows: a quick question gets a one or two sentence answer.
 ${hasConversation ? "If the user asks you to modify, shorten, or refine your previous response, do exactly that — edit the previous response as instructed rather than generating a new answer from scratch.\n" : ""}If the research doesn't contain enough information to answer, say so rather than guessing.
 Do NOT reference or mention "the notepad" or "the full notepad" in your reply — the user doesn't know about it.
 Do NOT wrap your response in markdown code fences (\`\`\`). Output raw markdown directly.
-Write a helpful, well-formatted markdown answer. Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.`;
+Include 1-3 citations using EXACTLY this format: [Title](URL) — the ] must come before the (. Source URLs ONLY from the research above. Each URL must appear only once — never repeat the same link.
+
+User's latest request: ${originalQuery}`;
 
     if (onAgentPrompt) onAgentPrompt("Writer", "user", chatPrompt);
     emit("prompt", {

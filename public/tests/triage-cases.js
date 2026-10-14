@@ -72,6 +72,43 @@ const ON_DEVICE_HISTORY = [
   },
 ];
 
+// Observed: the Writer's notepad and reply after the first question.
+const MCP_NOTEPAD = `# research brief: AI-Native Engineering
+
+## Summary
+The **Model Context Protocol (MCP)** is an open standard intended to enable AI models to interact with external tools and data sources in a uniform and secure manner by providing servers that host these capabilities. Nearform has documented tips, tricks, and pitfalls for implementing an MCP server, emphasizing its role in creating flexible integrations. Key considerations for implementation include:
+*   Defining tools once so the model can utilize them safely and consistently, which helps developers avoid manual data copying and iteration.
+*   Focusing on the protocol, using technologies like Node.js, and exploring related concepts such as Spec-Driven Development.
+
+## Posts
+### Implementing model context protocol (MCP): Tips, tricks and pitfalls
+The Model Context Protocol (MCP) is an open standard that allows AI models to communicate with external tools and data sources in a uniform, safe way. MCP servers make tools and information available, and MCP compatible clients connect to them to use what is provided. This enables easy mixing and matching of capabilities, resulting in flexible and powerful integrations without needing to build a new plug-in. For developers, this means defining their tools once, allowing the model to use them safely and consistently.
+[Implementing model context protocol (MCP): Tips, tricks and pitfalls](https://nearform.com/digital-community/implementing-model-context-protocol-mcp-tips-tricks-and-pitfalls)
+
+### Lessons from crafting a Node.js MCP server
+MCP is a standard protocol that lets an LLM call your code and use your tools. It facilitates connecting a model with other services, systems, and applications, allowing the LLM to act on your behalf by using defined tools safely and consistently, rather than relying on manual code copying or iterative refinement.
+[Lessons from crafting a Node.js MCP server](https://nearform.com/digital-community/lessons-from-crafting-a-node-js-mcp-server)
+
+### WebMCP: Turning web pages into tools for AI agents
+WebMCP is an emerging standard that permits web pages to function as MCP servers, effectively turning web pages into tools for AI agents. The W3C Web Machine Learning Community Group is overseeing the specification, with development being championed by engineers at Google and Microsoft.
+[WebMCP: Turning web pages into tools for AI agents](https://nearform.com/digital-community/webmcp-turning-web-pages-into-tools-for-ai-agents/)
+
+## Citations
+*   [Implementing model context protocol (MCP): Tips, tricks and pitfalls](https://nearform.com/digital-community/implementing-model-context-protocol-mcp-tips-tricks-and-pitfalls)
+*   [Lessons from crafting a Node.js MCP server](https://nearform.com/digital-community/lessons-from-crafting-a-node-js-mcp-server)
+*   [WebMCP: Turning web pages into tools for AI agents](https://nearform.com/digital-community/webmcp-turning-web-pages-into-tools-for-ai-agents/)`;
+
+const MCP_HISTORY = [
+  {
+    role: "user",
+    text: "What are the tips, tricks and pitfalls of implementing an MCP server?",
+  },
+  {
+    role: "assistant",
+    text: "To effectively implement an MCP server, the key takeaway is to define your tools once so that AI models can use them safely and consistently, avoiding the need for manual data copying [Implementing model context protocol (MCP): Tips, tricks and pitfalls](https://nearform.com/digital-community/implementing-model-context-protocol-mcp-tips-tricks-and-pitfalls). Focusing on the protocol and using technologies like Node.js helps facilitate connecting models to various services [Lessons from crafting a Node.js MCP server](https://nearform.com/digital-community/lessons-from-crafting-a-node-js-mcp-server).",
+  },
+];
+
 const shell = (id, message, research, extra = {}) => ({
   id,
   notepad: SHELL_TOOLS_NOTEPAD,
@@ -92,6 +129,15 @@ const onDevice = (id, message, research, extra = {}) => ({
   ...extra,
 });
 
+const mcp = (id, message, research, extra = {}) => ({
+  id,
+  notepad: MCP_NOTEPAD,
+  history: MCP_HISTORY,
+  message,
+  research,
+  source: "authored",
+  ...extra,
+});
 export const CASES = [
   shell(
     "shell-secure-tool",
@@ -161,4 +207,10 @@ export const CASES = [
     false,
   ),
   onDevice("device-graphql", "What about Nearform's work with GraphQL?", true),
+  mcp("mcp-acronym", "Hold on -- what does MCP stand for again?", false, {
+    source: "observed",
+    note: "Spelled out in the notepad summary and in all three posts.",
+  }),
+  mcp("mcp-webmcp-who", "Who is behind WebMCP?", false),
+  mcp("mcp-a2a", "What has Nearform written about the A2A protocol?", true),
 ];

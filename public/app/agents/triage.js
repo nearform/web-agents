@@ -119,7 +119,15 @@ export const CHOICE_SCHEMA = {
 };
 
 // p(research) at or above this means research. Override: ?researchThreshold=
-const RESEARCH_THRESHOLD = parseFloat(params.get("researchThreshold")) || 0.5;
+//
+// Not 0.5: the scores lean toward whichever option is listed last. With
+// "research" second, a message the notepad plainly answers ("what does MCP
+// stand for again?") still scores 0.6-0.7, and with the options swapped the
+// same messages score under 0.3. The ranking holds up, so the cut moves
+// instead: on the 21 cases in public/tests/triage-cases.js (Canary 157, Oct
+// 2026), 0.5 gets 15 right, all six misses unneeded research; 0.7 gets 20.
+// Reuse is the default, so research needs a high score.
+const RESEARCH_THRESHOLD = parseFloat(params.get("researchThreshold")) || 0.7;
 
 const runDecisionChoice = async (
   input,

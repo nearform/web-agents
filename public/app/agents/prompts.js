@@ -164,9 +164,9 @@ ${URL_RULES}
 - EVERY fact, claim, and URL in your output MUST come from the research findings provided. Do NOT add outside knowledge, background information, or general statements not grounded in the research.
 - If a URL appears truncated or incomplete in the research, OMIT it entirely. Never guess or reconstruct a partial URL.
 - When referring to source material, use the words "articles", "sources", or "citations". Never say "chunks", "context", or "tool results".
-- If no relevant information exists, state that clearly. Do NOT fill gaps with general knowledge.
+- If no relevant information exists, state that clearly. Do NOT fill gaps with general knowledge.`;
 
-## Format
+const WRITER_NOTEPAD_FORMAT = `## Format
 - The research brief is already structured. Preserve its structure and content faithfully.
 - Ensure sections exist: Summary and Posts. Add a Citations section with deduplicated sources.
 - Clean up formatting and deduplicate URLs, but do NOT restructure or heavily rewrite the research content.
@@ -175,9 +175,23 @@ ${URL_RULES}
 - NEVER repeat the same link. Each unique URL should appear exactly once. Cite a source once where it's most relevant, then refer back to it by title without re-linking.
 - Output ONLY the markdown content, no preamble or wrapping. Do NOT wrap output in markdown code fences (\`\`\`).`;
 
-export const getWriterSystemPrompt = (...contextTexts) => {
+// Chat-only replies must not get the notepad format above: with "Ensure
+// sections exist: Summary and Posts" in the system prompt, a follow-up like
+// "what does MCP stand for?" came back as the whole notepad, reworded.
+const WRITER_CHAT_FORMAT = `## Format
+- You are replying in a chat. Answer the user's latest message directly.
+- Match the length to the question. A quick factual question gets one or two sentences.
+- Do NOT reproduce the research notes or their structure. No Summary, Posts, or Citations sections unless the user asks for them.
+- Use markdown only where it helps: **bold**, a short list if the user asks for one.
+- Output ONLY the reply, no preamble. Do NOT wrap output in markdown code fences (\`\`\`).`;
+
+export const getWriterSystemPrompt = (
+  contextTexts,
+  { chatOnly = false } = {},
+) => {
   const topicGuidance = getTopicGuidance(...contextTexts);
-  return `${WRITER_BASE}${topicGuidance}`;
+  const format = chatOnly ? WRITER_CHAT_FORMAT : WRITER_NOTEPAD_FORMAT;
+  return `${WRITER_BASE}\n\n${format}${topicGuidance}`;
 };
 
 const TRIAGE_BASE = `You decide whether a follow-up message requires NEW web research or can be answered by reworking existing content.
