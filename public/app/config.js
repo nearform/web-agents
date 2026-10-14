@@ -27,6 +27,8 @@ export const config = {
     maxCoordinatorRetries: 1,
   },
   deepLinkTool: params.get("tool") || null,
+  // `?banner=false` drops the footer banner, for a shared screen.
+  showBanner: params.get("banner") !== "false",
   context: {
     warnPct: 80,
     criticalPct: 90,

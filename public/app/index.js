@@ -412,58 +412,62 @@ export const App = () => {
           />
         `
       }
-
-      <footer className="footer ${bannerMinimized ? "footer--minimized" : ""}">
-        ${
-          bannerMinimized
-            ? html`
-                <div className="banner-mini">
-                  <a
-                    href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="banner-mini-pill"
-                    aria-label="Nearform Open Source"
-                  >
-                    NF
-                  </a>
-                  <button
-                    type="button"
-                    className="banner-restore-btn"
-                    onClick=${() => setBannerMinimized(false)}
-                    aria-label="Restore banner"
-                    title="Restore banner"
-                  >
-                    <i className="ph ph-arrow-square-out"></i>
-                  </button>
-                </div>
-              `
-            : html`
-                <div className="banner-wrapper">
-                  <a
-                    href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
-                      alt="Nearform Open Source"
-                      className="nearform-banner"
-                    />
-                  </a>
-                  <button
-                    type="button"
-                    className="banner-minimize-btn"
-                    onClick=${() => setBannerMinimized(true)}
-                    title="Minimize banner"
-                    aria-label="Minimize banner"
-                  >
-                    <i className="ph ph-minus"></i>
-                  </button>
-                </div>
-              `
-        }
-      </footer>
+      ${
+        config.showBanner &&
+        html`<footer
+          className="footer ${bannerMinimized ? "footer--minimized" : ""}"
+        >
+          ${
+            bannerMinimized
+              ? html`
+                  <div className="banner-mini">
+                    <a
+                      href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="banner-mini-pill"
+                      aria-label="Nearform Open Source"
+                    >
+                      NF
+                    </a>
+                    <button
+                      type="button"
+                      className="banner-restore-btn"
+                      onClick=${() => setBannerMinimized(false)}
+                      aria-label="Restore banner"
+                      title="Restore banner"
+                    >
+                      <i className="ph ph-arrow-square-out"></i>
+                    </button>
+                  </div>
+                `
+              : html`
+                  <div className="banner-wrapper">
+                    <a
+                      href="https://www.nearform.com/contact/?utm_source=open-source&utm_medium=banner&utm_campaign=os-project-pages"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src="https://raw.githubusercontent.com/nearform/.github/refs/heads/master/assets/os-banner-green.svg"
+                        alt="Nearform Open Source"
+                        className="nearform-banner"
+                      />
+                    </a>
+                    <button
+                      type="button"
+                      className="banner-minimize-btn"
+                      onClick=${() => setBannerMinimized(true)}
+                      title="Minimize banner"
+                      aria-label="Minimize banner"
+                    >
+                      <i className="ph ph-minus"></i>
+                    </button>
+                  </div>
+                `
+          }
+        </footer>`
+      }
     </div>
   `;
 };
