@@ -29,6 +29,8 @@ export const config = {
   deepLinkTool: params.get("tool") || null,
   // `?banner=false` drops the footer banner, for a shared screen.
   showBanner: params.get("banner") !== "false",
+  // `?present=true` pins the AI-native engineering query first in the suggestions.
+  present: params.get("present") === "true",
   context: {
     warnPct: 80,
     criticalPct: 90,

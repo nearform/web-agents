@@ -1,6 +1,7 @@
 import React from "react";
 import { html } from "../util/html.js";
 import { renderMarkdown } from "../util/markdown.js";
+import { config } from "../config.js";
 
 const SUGGESTED_QUERIES = [
   {
@@ -92,6 +93,10 @@ const SUGGESTED_QUERIES = [
   },
 ];
 
+// Pinned first under `?present=true`, so the talk demo always offers it.
+const PRESENT_QUERY =
+  "What is AI-native engineering and how does it change product development?";
+
 const ChatBubbleText = ({ text, isAssistant }) => {
   const [showRaw, setShowRaw] = React.useState(false);
 
@@ -136,12 +141,15 @@ export const ChatPanel = ({
   onStopNewQuery,
 }) => {
   const [suggestions] = React.useState(() => {
-    const pool = [...SUGGESTED_QUERIES];
+    const pinned = config.present
+      ? SUGGESTED_QUERIES.filter((s) => s.query === PRESENT_QUERY)
+      : [];
+    const pool = SUGGESTED_QUERIES.filter((s) => !pinned.includes(s));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return pool.slice(0, 4);
+    return [...pinned, ...pool].slice(0, 4);
   });
 
   const handleSubmit = (e) => {
